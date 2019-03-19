@@ -28,7 +28,7 @@ function ConfirmModal({show, title, message, onCancel, onConfirm, type}: Props):
               Cancel
             </Button>
             <Button variant={type === 'remove' ? 'danger' : 'primary'} onClick={onConfirm}>
-            {type === 'remove' ? 'Remove' : 'Confirm'}
+              {type === 'remove' ? 'Remove' : 'Confirm'}
             </Button>
           </Modal.Footer>
         </Modal>

@@ -47,7 +47,7 @@ function removeNote(notes: Array<Note>, id: number): Array<Note> {
         );
 }
 
-function reducer(state: State, action: any): State {
+export function reducer(state: State, action: any): State {
     switch (action.type) {
         case 'addNote':
             return {
