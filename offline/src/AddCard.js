@@ -29,9 +29,6 @@ function AddCard({onClick}: Props): Node {
                 <Card.Title style={{verticalAlign: 'center'}}>
                     Add new note
                 </Card.Title>
-                {/* <Card.Text>
-                        Some text here
-                </Card.Text> */}
             </Card.Body>
         </Card>
     );

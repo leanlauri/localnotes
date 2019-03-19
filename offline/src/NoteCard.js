@@ -2,7 +2,7 @@
  * @flow
  */
 import type {Node} from 'react';
-import type {Note} from './notesState';
+import type {Note} from './notesReducer';
 
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';

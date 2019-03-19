@@ -1,10 +1,7 @@
 /**
  * @flow
  */
-import type {Node} from 'react';
-
-import { Container, Row, Col } from 'react-bootstrap';
-import React, { useReducer, useEffect } from 'react';
+import { useReducer } from 'react';
 
 export type Note = {|
     id?: number,
@@ -77,6 +74,6 @@ function reducer(state: State, action: any): State {
     }
 }
 
-export function useNotesReducer(initState: () => State) {
+export default function notesReducer(initState: () => State) {
     return useReducer<State, any, null>(reducer, null, initState);
 }
