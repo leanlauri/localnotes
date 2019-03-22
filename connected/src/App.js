@@ -11,7 +11,9 @@ import NotesContainer from './NotesContainer';
 function App(): Node {
   return (
     <div className="App">
-      <LoginBar />
+      <div className="topbar-container">
+        <LoginBar />
+      </div>
       <div className="App-contents">
         <NotesContainer />
       </div>

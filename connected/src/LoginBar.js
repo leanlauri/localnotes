@@ -6,10 +6,12 @@ import type { Node } from 'react';
 import React, { useState } from 'react';
 import { Navbar, Nav } from 'react-bootstrap';
 import LoginModal from './LoginModal';
+import LoginUpSellBanner from './LoginUpSellBanner';
 
 function LoginBar(): Node {
     const [loginDialogVisible, setLoginDialogVisible] = useState(false);
     const [loggedIn, setLoggedIn] = useState(false);
+    const [upSellDisabled, setUpSellDisabled] = useState(false);
 
     const onSelect = (key, event) => {
         switch (key) {
@@ -40,11 +42,13 @@ function LoginBar(): Node {
                 bg="light"
                 fixed="top"
                 expand
+                
                 onSelect={onSelect}>
                 <Navbar.Brand href="#home">Local Notes</Navbar.Brand>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
                 <Navbar.Collapse id="basic-navbar-nav">
-                    <Nav className="mr-auto">
+                    <Nav className="mr-auto"></Nav>
+                    <Nav>
                         {!loggedIn
                             ? <Nav.Link href="#login">Login</Nav.Link>
                             : <Nav.Link href="#logout">Logout</Nav.Link>
@@ -52,6 +56,12 @@ function LoginBar(): Node {
                     </Nav>
                 </Navbar.Collapse>
             </Navbar>
+            {(!loggedIn && !upSellDisabled)
+                ? <LoginUpSellBanner
+                    onDismiss={() => setUpSellDisabled(true)}
+                    onAction={() => setLoginDialogVisible(true)}/>
+                : null
+            }
         </>
     );
 }
