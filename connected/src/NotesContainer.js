@@ -4,14 +4,13 @@
 import type {Node} from 'react';
 
 import { Container, Row, Col } from 'react-bootstrap';
-import React from 'react';
+import React, { useContext } from 'react';
 import AddCard from './AddCard';
 import NoteCard from './NoteCard';
-import localStorageReducer from './localStorageReducer';
+import { StateContext } from './App';
 
 function NotesContainer(): Node {
-    const [state, dispatch] = localStorageReducer();
-    
+    const [state, dispatch] = useContext(StateContext);
     return (
         <>
             <Container >

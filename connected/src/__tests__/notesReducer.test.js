@@ -27,7 +27,7 @@ describe('reducer', () => {
                 title: 'Additional Note',
                 body: 'Some body',
             },
-        })
+        });
 
         expect(startState).not.toBe(endState);
         expect(endState.notes.length).toBe(3);
@@ -48,7 +48,7 @@ describe('reducer', () => {
                 title: 'New First Title',
                 body: 'New body',
             },
-        })
+        });
 
         expect(startState).not.toBe(endState);
         expect(endState.notes.length).toBe(2);
@@ -69,7 +69,7 @@ describe('reducer', () => {
                 title: 'New Title',
                 body: 'New body',
             },
-        })
+        });
 
         expect(startState).not.toBe(endState);
         expect(endState.notes.length).toBe(2);
@@ -83,7 +83,7 @@ describe('reducer', () => {
         const endState = reducer(startState, {
             type: 'removeNote',
             id: 1,
-        })
+        });
 
         expect(startState).not.toBe(endState);
         expect(endState.notes.length).toBe(1);
@@ -100,10 +100,47 @@ describe('reducer', () => {
         const endState = reducer(startState, {
             type: 'removeNote',
             id: 99,
-        })
+        });
 
         expect(startState).not.toBe(endState);
         expect(endState.notes.length).toBe(2);
+    });
+
+    it('login normal usage', () => {
+        const startState = createInitialState();
+        const endState = reducer(startState, {
+            type: 'login',
+            loginEmail: 'test@test.com',
+        });
+
+        expect(startState).not.toBe(endState);
+        expect(endState.loginEmail).toEqual('test@test.com');
+        expect(endState.upSellDisabled).toEqual(true);
+    });
+
+    it('logout normal usage', () => {
+        const startState = createInitialState();
+        const midState = reducer(startState, {
+            type: 'login',
+            loginEmail: 'test@test.com',
+        });
+        const endState = reducer(midState, {
+            type: 'logout',
+        });
+
+        expect(startState).not.toBe(endState);
+        expect(endState.loginEmail).toBeUndefined();
+        expect(endState.upSellDisabled).toEqual(true);
+    });
+
+    it('disableUpSell normal usage', () => {
+        const startState = createInitialState();
+        const endState = reducer(startState, {
+            type: 'disableUpSell',
+        });
+
+        expect(startState).not.toBe(endState);
+        expect(endState.upSellDisabled).toEqual(true);
     });
 
 });

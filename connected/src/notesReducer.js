@@ -12,6 +12,8 @@ export type Note = {|
 export type State = {|
     hash: number,
     notes: Array<Note>,
+    loginEmail?: string,
+    upSellDisabled?: boolean,
     lastId: number,
 |};
 
@@ -69,7 +71,24 @@ export function reducer(state: State, action: any): State {
                 ...state,
                 hash: state.hash + 1,
                 notes: removeNote(state.notes, action.id),
-            }
+            };
+        case 'login':
+            if (action.loginEmail == null) return state;
+            return {
+                ...state,
+                loginEmail: action.loginEmail,
+                upSellDisabled: true,
+            };
+        case 'logout':
+            return {
+                ...state,
+                loginEmail: undefined,
+            };
+        case 'disableUpSell':
+            return {
+                ...state,
+                upSellDisabled: true,
+            };
         default: throw new Error('unknown action: ' + action.type);
     }
 }
