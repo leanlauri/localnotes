@@ -8,6 +8,7 @@ import { Navbar, Nav } from 'react-bootstrap';
 import LoginModal from './LoginModal';
 import LoginUpSellBanner from './LoginUpSellBanner';
 import { StateContext } from './App';
+import ErrorBanner from './ErrorBanner';
 
 function LoginBar(): Node {
     const [state, dispatch] = useContext(StateContext);
@@ -68,6 +69,9 @@ function LoginBar(): Node {
                     onAction={() => setLoginDialogVisible(true)}/>
                 : null
             }
+            <ErrorBanner
+                status={state.connectState}
+                onLogin={() => setLoginDialogVisible(true)}/>
         </>
     );
 }

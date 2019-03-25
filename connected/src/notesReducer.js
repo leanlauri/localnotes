@@ -9,12 +9,15 @@ export type Note = {|
     body: ?string,
 |};
 
+export type ConnectState = 'connected' | 'network_error' |'token_rejected';
+
 export type State = {|
     hash: number,
     notes: Array<Note>,
+    lastId: number,
     loginEmail?: string,
     upSellDisabled?: boolean,
-    lastId: number,
+    connectState?: ConnectState,
 |};
 
 function addNote(notes: Array<Note>, id: number, content: Note): Array<Note> {
