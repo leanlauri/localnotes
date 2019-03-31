@@ -11,7 +11,7 @@ import { StateContext } from './App';
 import ErrorBanner from './ErrorBanner';
 import connector from './firebaseConnector';
 
-function LoginBar(): Node {
+function LoginBarWithBanners(): Node {
     const [state, dispatch] = useContext(StateContext);
     const [loginDialogVisible, setLoginDialogVisible] = useState(false);
 
@@ -21,6 +21,8 @@ function LoginBar(): Node {
                 setLoginDialogVisible(true);
                 break;
             case '#logout':
+                // TODO: handle login errors
+                connector.logout();
                 dispatch({
                     type: 'logout'
                 });
@@ -39,7 +41,7 @@ function LoginBar(): Node {
                 // Save the email locally so you don't need to ask the user for it again
                 // if they open the link on the same device.
                 dispatch({
-                    type: 'login',
+                    type: 'startLogin',
                     loginEmail: email,
                 });        
             })
@@ -93,4 +95,4 @@ function LoginBar(): Node {
     );
 }
 
-export default LoginBar;
+export default LoginBarWithBanners;

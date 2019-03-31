@@ -3,28 +3,29 @@
  */
 import type { Node } from 'react';
 
-import React, { createContext } from 'react';
+import React, { createContext, useEffect } from 'react';
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import './App.css';
 import localStorageReducer from './localStorageReducer';
-import LoginBar from './LoginBar';
+import LoginBarWithBanners from './LoginBarWithBanners';
 import NotesContainer from './NotesContainer';
 import connector from './firebaseConnector';
-import { Exception } from 'handlebars';
 
 
 export const StateContext = createContext<any, any>([null, null]);
-connector.connect(); // TODO: make this async
 
 function App(): Node {
   const [state, dispatch] = localStorageReducer();
+  useEffect(() => {
+    if (state.loginEmail != null) connector.connect();
+  }, [state.loginEmail]);
 
   return (
     <div className="App">
       <Router>
         <Route
           path="/finishLogin/"
-          render={(match, history) => (
+          render={({match, history}) => (
             <HandleLogin state={state} dispatch={dispatch} match={match} history={history}/>
           )}/>
           
@@ -36,7 +37,7 @@ function App(): Node {
             return (
               <StateContext.Provider value={[state, dispatch]}>
                 <div className="topbar-container">
-                  <LoginBar />
+                  <LoginBarWithBanners />
                 </div>
                 <div className="App-contents">
                   <NotesContainer />
@@ -51,17 +52,23 @@ function App(): Node {
 
 function HandleLogin({ state, dispatch, match, history }): Node {
   connector.connect();
-  // if (!match.params.sessionId) throw new Exception('No session id');
+  // if (!match.params.sessionId) throw new Error('No session id');
   // TODO: check if loginEmail is null -- if login started from a different device -- and prompt for email
-  if (state.loginEmail == null) throw Exception('no login email');
-
+  if (state.loginEmail == null) {
+    console.log('No login email in state');
+    history.push('/');
+    dispatch({
+      type: 'loginFailed',
+    });
+    return null;
+  }
   connector.finishLogin(window.location.href, state.loginEmail)
     .then(function(result) {
       // Clear email from storage.
+      history.push('/');
       dispatch({
         type: 'completeLogin',
       });
-      history.push('/');
       // window.localStorage.removeItem('emailForSignIn');
       // You can access the new user via result.user
       // Additional user info profile not available via:
@@ -71,6 +78,9 @@ function HandleLogin({ state, dispatch, match, history }): Node {
     })
     .catch(function(error) {
         console.log('error', error, error && error.code);
+        dispatch({
+          type: 'loginFailed',
+        });
         // Some error occurred, you can inspect the code: error.code
         // Common errors could be invalid email and invalid or expired OTPs.
     });

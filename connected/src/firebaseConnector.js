@@ -8,10 +8,10 @@ declare var firebase: any;
 type Status = 'none' | 'initialised' | 'init_failed';
 
 let status: Status = 'none';
-const actionCodeSettingsBase = {
+const actionCodeSettings = {
     // URL you want to redirect back to. The domain (www.example.com) for this
     // URL must be whitelisted in the Firebase Console.
-    url: 'http://localhost/finishLogin/',
+    url: 'http://localhost:3000/finishLogin/',
     //url: 'https://www.example.com/finishSignUp?cartId=1234',
     // This must be true.
     handleCodeInApp: true,
@@ -44,18 +44,17 @@ function connect(): boolean {
     return true;
 }
 
-const createActionCodeSettings = (sessionId: string) => ({
-    ...actionCodeSettingsBase,
-    url:  actionCodeSettingsBase.url + sessionId,
-});
+// const createActionCodeSettings = (sessionId: string) => ({
+//     ...actionCodeSettingsBase,
+//     url:  actionCodeSettingsBase.url + sessionId,
+// });
 
 function startLogin(email: string): Promise {
     if (status !== 'initialised') init();
 
-    const settings = createActionCodeSettings('');
     return firebase
         .auth()
-        .sendSignInLinkToEmail(email, settings);
+        .sendSignInLinkToEmail(email, actionCodeSettings);
         // .then(function() {
         //     // The link was successfully sent. Inform the user.
         //     // Save the email locally so you don't need to ask the user for it again
@@ -99,11 +98,20 @@ function finishLogin(address: string, email: string): Promise {
             //     // Some error occurred, you can inspect the code: error.code
             //     // Common errors could be invalid email and invalid or expired OTPs.
             // });
+    } else {
+        return new Promise((resolve, reject) => {
+            reject(new Error('Address is not a valid login link'));
+        });
     }
+}
+
+function logout(): Promise {
+    return firebase.auth().signOut();
 }
 
 export default {
     connect,
     startLogin,
     finishLogin,
+    logout,
 };

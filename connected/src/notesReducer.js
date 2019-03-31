@@ -9,7 +9,7 @@ export type Note = {|
     body: ?string,
 |};
 
-export type ConnectState = 'connected' | 'network_error' |'token_rejected';
+export type ConnectState = 'loginStarted' | 'connected' | 'loginFailed' | 'networkError' |'tokenRejected';
 
 export type State = {|
     hash: number,
@@ -75,21 +75,30 @@ export function reducer(state: State, action: any): State {
                 hash: state.hash + 1,
                 notes: removeNote(state.notes, action.id),
             };
-        case 'login':
+        case 'startLogin':
             if (action.loginEmail == null) return state;
             return {
                 ...state,
                 loginEmail: action.loginEmail,
                 upSellDisabled: true,
+                connectState: 'loginStarted',
             };
         case 'completeLogin':
             return {
                 ...state,
-            };        
+                connectState: 'connected',
+            };
+        case 'loginFailed':
+            return {
+                ...state,
+                loginEmail: undefined,
+                connectState: 'loginFailed',
+            };
         case 'logout':
             return {
                 ...state,
                 loginEmail: undefined,
+                connectState: undefined,
             };
         case 'disableUpSell':
             return {

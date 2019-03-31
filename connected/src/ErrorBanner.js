@@ -22,7 +22,32 @@ function ErrorBanner({status, onLogin}: Props): Node {
     }
 
     switch (status) {
-        case 'network_error':
+        case 'loginStarted':
+            return (
+                <Alert
+                    dismissible
+                    variant="primary"
+                    show={showingWarning}
+                    onClose={() => setShowingWarning(false)}
+                >
+                    <Alert.Heading>Waiting to Login</Alert.Heading>
+                    <p>
+                        Find and click on your login link in your email client.
+                    </p>
+                </Alert>
+            );
+        case 'connected':
+            return (
+                <Alert
+                    dismissible
+                    variant="success"
+                    show={showingWarning}
+                    onClose={() => setShowingWarning(false)}
+                >
+                    <Alert.Heading>Logged in</Alert.Heading>
+                </Alert>
+            );
+        case 'networkError':
             return (
                 <Alert
                     dismissible
@@ -36,7 +61,8 @@ function ErrorBanner({status, onLogin}: Props): Node {
                     </p>
                 </Alert>
             );
-        case 'token_rejected':
+        case 'loginFailed':
+        case 'tokenRejected':
             return (
                 <Alert
                     dismissible
