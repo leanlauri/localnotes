@@ -9,6 +9,7 @@ import LoginModal from './LoginModal';
 import LoginUpSellBanner from './LoginUpSellBanner';
 import { StateContext } from './App';
 import ErrorBanner from './ErrorBanner';
+import connector from './firebaseConnector';
 
 function LoginBar(): Node {
     const [state, dispatch] = useContext(StateContext);
@@ -31,10 +32,26 @@ function LoginBar(): Node {
     const onLogin = (email) => {
         setLoginDialogVisible(false);
         console.log('login with:', email);
-        dispatch({
-            type: 'login',
-            loginEmail: email,
-        });
+        connector
+            .login(email)
+            .then(function() {
+                // The link was successfully sent. Inform the user.
+                // Save the email locally so you don't need to ask the user for it again
+                // if they open the link on the same device.
+                dispatch({
+                    type: 'login',
+                    loginEmail: email,
+                });        
+            })
+            .catch(function(error) {
+                // Some error occurred, you can inspect the code: error.code
+                console.log('Error sending login email:', error, error && error.code);
+                dispatch({
+                    type: 'logout',
+                });
+        
+            });
+        
     };
 
     return (

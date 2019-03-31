@@ -8,8 +8,10 @@ import './App.css';
 import localStorageReducer from './localStorageReducer';
 import LoginBar from './LoginBar';
 import NotesContainer from './NotesContainer';
+import connector from './firebaseConnector';
 
 export const StateContext = createContext<any, any>([null, null]);
+connector.connect(); // TODO: make this async
 
 function App(): Node {
   const [state, dispatch] = localStorageReducer();

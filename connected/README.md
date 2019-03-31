@@ -4,6 +4,11 @@ A simple notebook web app (PWA) that is designed to be offline first, with extra
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## TODO:
+
+* Add React Router (for email link)
+
+
 ## Available Scripts
 
 In the project directory, you can run:
