@@ -11,7 +11,7 @@ let status: Status = 'none';
 const actionCodeSettingsBase = {
     // URL you want to redirect back to. The domain (www.example.com) for this
     // URL must be whitelisted in the Firebase Console.
-    url: 'http://localhost/finishLogin?sessionId=',
+    url: 'http://localhost/finishLogin/',
     //url: 'https://www.example.com/finishSignUp?cartId=1234',
     // This must be true.
     handleCodeInApp: true,
@@ -49,10 +49,10 @@ const createActionCodeSettings = (sessionId: string) => ({
     url:  actionCodeSettingsBase.url + sessionId,
 });
 
-function login(email: string): Promise {
+function startLogin(email: string): Promise {
     if (status !== 'initialised') init();
 
-    const settings = createActionCodeSettings('12345');
+    const settings = createActionCodeSettings('');
     return firebase
         .auth()
         .sendSignInLinkToEmail(email, settings);
@@ -67,7 +67,43 @@ function login(email: string): Promise {
         // });
 }
 
+// const address = window.location.href;
+function finishLogin(address: string, email: string): Promise {
+    // Confirm the link is a sign-in with email link.
+    if (firebase.auth().isSignInWithEmailLink(address)) {
+        // Additional state parameters can also be passed via URL.
+        // This can be used to continue the user's intended action before triggering
+        // the sign-in operation.
+        // Get the email if available. This should be available if the user completes
+        // the flow on the same device where they started it.
+        // var email = window.localStorage.getItem('emailForSignIn');
+        // if (!email) {
+        // // User opened the link on a different device. To prevent session fixation
+        // // attacks, ask the user to provide the associated email again. For example:
+        // email = window.prompt('Please provide your email for confirmation');
+        // }
+        // The client SDK will parse the code from the link for you.
+        return firebase
+            .auth()
+            .signInWithEmailLink(email, window.location.href);
+            // .then(function(result) {
+            //     // Clear email from storage.
+            //     window.localStorage.removeItem('emailForSignIn');
+            //     // You can access the new user via result.user
+            //     // Additional user info profile not available via:
+            //     // result.additionalUserInfo.profile == null
+            //     // You can check if the user is new or existing:
+            //     // result.additionalUserInfo.isNewUser
+            // })
+            // .catch(function(error) {
+            //     // Some error occurred, you can inspect the code: error.code
+            //     // Common errors could be invalid email and invalid or expired OTPs.
+            // });
+    }
+}
+
 export default {
     connect,
-    login,
+    startLogin,
+    finishLogin,
 };

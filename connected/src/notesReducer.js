@@ -82,6 +82,10 @@ export function reducer(state: State, action: any): State {
                 loginEmail: action.loginEmail,
                 upSellDisabled: true,
             };
+        case 'completeLogin':
+            return {
+                ...state,
+            };        
         case 'logout':
             return {
                 ...state,
