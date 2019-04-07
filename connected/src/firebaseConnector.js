@@ -1,4 +1,7 @@
 /**
+ * TODO: limit access to owner only
+ * TODO: enable offline mode and listening to snapsnots
+ * 
  * @flow
  */
 import type {Note} from './notesReducer';
@@ -33,33 +36,33 @@ const actionCodeSettings = {
 };
 
 function init() {
-    if (firebase) {
-        console.log('Initialising Firebase');
-        firebase.initializeApp(config);
-        status = 'initialised';
-        initDb();
-    } else {
-        console.log('Firebase script not loaded. Cannot initialise.');
-        status = 'init_failed';
-    }
+    // if (firebase) {
+    console.log('Initialising Firebase');
+    firebase.initializeApp(config);
+    initDb();
+    status = 'initialised';
+    // } else {
+    //     console.log('Firebase script not loaded. Cannot initialise.');
+    //     status = 'init_failed';
+    // }
 }
 
 function initDb() {
     // var db = firebase.firestore();
     db = firebase.firestore();
-        // .enablePersistence()
-        // .catch(function(err) {
-        //     console.error('Firestore: Failed to enable offline persistence:', err && err.code);
-        //     // if (err.code == 'failed-precondition') {
-        //     //     // Multiple tabs open, persistence can only be enabled
-        //     //     // in one tab at a a time.
-        //     //     // ...
-        //     // } else if (err.code == 'unimplemented') {
-        //     //     // The current browser does not support all of the
-        //     //     // features required to enable persistence
-        //     //     // ...
-        //     // }
-        // });
+    db.enablePersistence()
+        .catch(function(err) {
+            console.error('Firestore: Failed to enable offline persistence:', err && err.code);
+            // if (err.code == 'failed-precondition') {
+            //     // Multiple tabs open, persistence can only be enabled
+            //     // in one tab at a a time.
+            //     // ...
+            // } else if (err.code == 'unimplemented') {
+            //     // The current browser does not support all of the
+            //     // features required to enable persistence
+            //     // ...
+            // }
+        });
 }
 
 function connect(): boolean {
@@ -78,7 +81,7 @@ function connect(): boolean {
 // });
 
 function startLogin(email: string): Promise<any> {
-    if (!connect()) return;
+    if (!connect()) return new Promise((resolve, reject) => reject(new Error('Cannot connect')));
 
     return firebase
         .auth()
@@ -137,16 +140,43 @@ function logout(): Promise<any> {
     return firebase.auth().signOut();
 }
 
-function sync(state: State, dispatch) {
+// TODO: should be promise
+function sync(state: State, dispatch): Promise<any> {
+    if (!db) {
+        console.error('DB not initialised');
+        return new Promise((resolve, reject) => reject(new Error('DB not initialised')));
+    }
+
+    return retrieveNotes(state.notes, dispatch)
+        .then(() => {
+            return sendNotes(state.notes, dispatch);            
+        });
+}
+
+function listenToChanges(state: State, dispatch) {
     if (!db) {
         console.error('DB not initialised');
         return;
     }
 
-    retrieveNotes(state.notes, dispatch)
-        .then(() => {
-            sendNotes(state.notes, dispatch);            
+    db.collection('notes')
+        .onSnapshot({}, (snapshot) => {
+            snapshot.docChanges().forEach(function(change) {
+                console.log('change.type', change.type);
+                if (change.type === 'added') {
+                    console.log("New note: ", change.doc.data());
+                    storeNoteLocally(change.doc.id, change.doc.data(), dispatch);
+                } else if (change.type === 'updated') { // TODO: check if correct
+                    console.log("Updated note: ", change.doc.data());
+                    updateNoteLocally(change.doc.id, change.doc.data(), dispatch);
+                } 
+                // TODO: remove doc event
+
+                // var source = snapshot.metadata.fromCache ? "local cache" : "server";
+                // console.log("Data came from " + source);
+            });
         });
+
 }
 
 function retrieveNotes(localNotes: Array<Note>, dispatch): Promise<any> {
@@ -165,12 +195,14 @@ function retrieveNotes(localNotes: Array<Note>, dispatch): Promise<any> {
     });
 }
 
-function sendNotes(notes: Array<Note>, dispatch) {
-    notes.forEach((note) => {
-        if (note.id.startsWith('local:')) {
-            storeNoteRemotely(note, dispatch);
-        }
-    });
+function sendNotes(notes: Array<Note>, dispatch): Promise<any> {
+    return Promise.all(
+        notes.map((note) => {
+            if (note.id.startsWith('local:')) {
+                return storeNoteRemotely(note, dispatch);
+            } else return new Promise((resolve, reject) => resolve());
+        })
+    );
 }
 
 function updateNoteLocally(id, data, dispatch) {
@@ -195,8 +227,8 @@ function storeNoteLocally(id, data, dispatch) {
     });
 }
 
-function storeNoteRemotely(note, dispatch) {
-    db.collection('notes').add({
+function storeNoteRemotely(note, dispatch): Promise<any> {
+    return db.collection('notes').add({
         title: note.title,
         body: note.body,
     })
@@ -225,4 +257,5 @@ export default {
     finishLogin,
     logout,
     sync,
+    listenToChanges,
 };

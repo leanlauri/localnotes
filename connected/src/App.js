@@ -18,8 +18,11 @@ function App(): Node {
   useEffect(() => {
     if (state.loginEmail != null && state.connectState === 'connected') {
       connector.connect();
-      connector.sync(state, dispatch);
-    }
+      connector.sync(state, dispatch)
+        .then(() => {
+          connector.listenToChanges(state, dispatch);
+        });
+   }
   }, [state.loginEmail, state.connectState]);
 
   return (
