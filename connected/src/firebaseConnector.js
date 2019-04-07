@@ -1,13 +1,19 @@
 /**
  * @flow
  */
-import config from './firebaseConfig.json';
+import type {Note} from './notesReducer';
+import type {State} from './notesReducer';
 
-declare var firebase: any;
+import config from './firebaseConfig.json';
+const firebase = require('firebase/app');
+require('firebase/auth');
+require('firebase/firestore');
+// declare var firebase: any;
 
 type Status = 'none' | 'initialised' | 'init_failed';
 
 let status: Status = 'none';
+let db;
 const actionCodeSettings = {
     // URL you want to redirect back to. The domain (www.example.com) for this
     // URL must be whitelisted in the Firebase Console.
@@ -31,15 +37,37 @@ function init() {
         console.log('Initialising Firebase');
         firebase.initializeApp(config);
         status = 'initialised';
+        initDb();
     } else {
         console.log('Firebase script not loaded. Cannot initialise.');
         status = 'init_failed';
     }
 }
 
+function initDb() {
+    // var db = firebase.firestore();
+    db = firebase.firestore();
+        // .enablePersistence()
+        // .catch(function(err) {
+        //     console.error('Firestore: Failed to enable offline persistence:', err && err.code);
+        //     // if (err.code == 'failed-precondition') {
+        //     //     // Multiple tabs open, persistence can only be enabled
+        //     //     // in one tab at a a time.
+        //     //     // ...
+        //     // } else if (err.code == 'unimplemented') {
+        //     //     // The current browser does not support all of the
+        //     //     // features required to enable persistence
+        //     //     // ...
+        //     // }
+        // });
+}
+
 function connect(): boolean {
     if (status === 'none') init();
-    if (status === 'init_failed') return false;
+    if (status === 'init_failed') {
+        console.error('Connect failed.');
+        return false;
+    }
 
     return true;
 }
@@ -49,8 +77,8 @@ function connect(): boolean {
 //     url:  actionCodeSettingsBase.url + sessionId,
 // });
 
-function startLogin(email: string): Promise {
-    if (status !== 'initialised') init();
+function startLogin(email: string): Promise<any> {
+    if (!connect()) return;
 
     return firebase
         .auth()
@@ -67,7 +95,7 @@ function startLogin(email: string): Promise {
 }
 
 // const address = window.location.href;
-function finishLogin(address: string, email: string): Promise {
+function finishLogin(address: string, email: string): Promise<any> {
     // Confirm the link is a sign-in with email link.
     if (firebase.auth().isSignInWithEmailLink(address)) {
         // Additional state parameters can also be passed via URL.
@@ -105,8 +133,76 @@ function finishLogin(address: string, email: string): Promise {
     }
 }
 
-function logout(): Promise {
+function logout(): Promise<any> {
     return firebase.auth().signOut();
+}
+
+function sync(state: State, dispatch) {
+    if (!db) {
+        console.error('DB not initialised');
+        return;
+    }
+
+    retrieveNotes(state.notes, dispatch)
+        .then(() => {
+            sendNotes(state.notes, dispatch);            
+        });
+}
+
+function retrieveNotes(localNotes: Array<Note>, dispatch): Promise<any> {
+    return db.collection('notes').get().then((querySnapshot) => {
+        querySnapshot.forEach((doc) => {
+            console.log(`${doc.id} => ${doc.data()}`);
+            const localNote = localNotes.find((note) => note.id === doc.id);
+            if (localNote) {
+                // TODO: compare version numbers
+            } else {
+                storeNoteLocally(doc, dispatch);
+            }
+        });
+    });
+}
+
+function sendNotes(notes: Array<Note>, dispatch) {
+    notes.map((note) => {
+        if (note.id.startsWith('local:')) {
+            storeNoteRemotely(note, dispatch);
+        }
+    });
+}
+
+function storeNoteLocally(doc, dispatch) {
+    dispatch({
+        type: 'addNote',
+        content: {
+            id: doc.id,
+            title: doc.title,
+            body: doc.body,
+        }
+    });
+}
+
+function storeNoteRemotely(note, dispatch) {
+    db.collection('notes').add({
+        title: note.title,
+        body: note.body,
+    })
+    .then(function(docRef) {
+        console.log("Document written with ID: ", docRef.id);
+        dispatch({
+            type: 'modifyNote',
+            id: note.id,
+            content: {
+                id: docRef.id,
+                title: note.title,
+                body: note.body, 
+            }
+        })
+    })
+    .catch(function(error) {
+        console.error("Error adding document: ", error);
+    });
+
 }
 
 export default {
@@ -114,4 +210,5 @@ export default {
     startLogin,
     finishLogin,
     logout,
+    sync,
 };

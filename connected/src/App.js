@@ -11,14 +11,16 @@ import LoginBarWithBanners from './LoginBarWithBanners';
 import NotesContainer from './NotesContainer';
 import connector from './firebaseConnector';
 
-
 export const StateContext = createContext<any, any>([null, null]);
 
 function App(): Node {
   const [state, dispatch] = localStorageReducer();
   useEffect(() => {
-    if (state.loginEmail != null) connector.connect();
-  }, [state.loginEmail]);
+    if (state.loginEmail != null && state.connectState === 'connected') {
+      connector.connect();
+      connector.sync(state, dispatch);
+    }
+  }, [state.loginEmail, state.connectState]);
 
   return (
     <div className="App">

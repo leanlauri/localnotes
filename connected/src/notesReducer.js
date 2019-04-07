@@ -4,7 +4,7 @@
 import { useReducer } from 'react';
 
 export type Note = {|
-    id?: number,
+    id: string,
     title: ?string,
     body: ?string,
 |};
@@ -20,7 +20,7 @@ export type State = {|
     connectState?: ConnectState,
 |};
 
-function addNote(notes: Array<Note>, id: number, content: Note): Array<Note> {
+function addNote(notes: Array<Note>, id: string, content: Note): Array<Note> {
     return notes
         .concat({
             ...content,
@@ -28,21 +28,21 @@ function addNote(notes: Array<Note>, id: number, content: Note): Array<Note> {
         });
 }
 
-function replaceNote(notes: Array<Note>, id: number, content: Note): Array<Note> {
+function replaceNote(notes: Array<Note>, id: string, content: Note): Array<Note> {
     const index = notes.findIndex(note => note.id === id);
     if (index === -1) return notes;
     return notes
         .slice(0, index)
         .concat({
             ...content,
-            id,
+            id: content.id || id,
         })
         .concat(
             notes.slice(index + 1)
         );
 }
 
-function removeNote(notes: Array<Note>, id: number): Array<Note> {
+function removeNote(notes: Array<Note>, id: string): Array<Note> {
     const index = notes.findIndex(note => note.id === id);
     if (index === -1) return notes;
     return notes
@@ -58,7 +58,7 @@ export function reducer(state: State, action: any): State {
             return {
                 ...state,
                 hash: state.hash + 1,
-                notes: addNote(state.notes, state.lastId + 1, action.content),
+                notes: addNote(state.notes, action.content.id || 'local:' + (state.lastId + 1), action.content),
                 lastId: state.lastId + 1,
             };
         case 'modifyNote':
