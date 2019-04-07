@@ -152,32 +152,45 @@ function sync(state: State, dispatch) {
 function retrieveNotes(localNotes: Array<Note>, dispatch): Promise<any> {
     return db.collection('notes').get().then((querySnapshot) => {
         querySnapshot.forEach((doc) => {
-            console.log(`${doc.id} => ${doc.data()}`);
+            const remoteData = doc.data();
+            console.log(`${doc.id} =>`, remoteData);
             const localNote = localNotes.find((note) => note.id === doc.id);
             if (localNote) {
-                // TODO: compare version numbers
+                // TODO: rather than overwrite local data, add more complex logic to consolidate changes
+                updateNoteLocally(doc.id, remoteData, dispatch);
             } else {
-                storeNoteLocally(doc, dispatch);
+                storeNoteLocally(doc.id, remoteData, dispatch);
             }
         });
     });
 }
 
 function sendNotes(notes: Array<Note>, dispatch) {
-    notes.map((note) => {
+    notes.forEach((note) => {
         if (note.id.startsWith('local:')) {
             storeNoteRemotely(note, dispatch);
         }
     });
 }
 
-function storeNoteLocally(doc, dispatch) {
+function updateNoteLocally(id, data, dispatch) {
+    dispatch({
+        type: 'modifyNote',
+        id: id,
+        content: {
+            title: data.title,
+            body: data.body,
+        }
+    });
+}
+
+function storeNoteLocally(id, data, dispatch) {
     dispatch({
         type: 'addNote',
         content: {
-            id: doc.id,
-            title: doc.title,
-            body: doc.body,
+            id: id,
+            title: data.title,
+            body: data.body,
         }
     });
 }
@@ -189,6 +202,7 @@ function storeNoteRemotely(note, dispatch) {
     })
     .then(function(docRef) {
         console.log("Document written with ID: ", docRef.id);
+        // modify local id to match cloud id
         dispatch({
             type: 'modifyNote',
             id: note.id,
