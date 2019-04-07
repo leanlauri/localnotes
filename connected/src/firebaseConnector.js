@@ -160,18 +160,19 @@ function listenToChanges(state: State, dispatch) {
     }
 
     db.collection('notes')
-        .onSnapshot({}, (snapshot) => {
+        .onSnapshot({includeMetadataChanges: true}, (snapshot) => {
             snapshot.docChanges().forEach(function(change) {
                 console.log('change.type', change.type);
-                if (change.type === 'added') {
-                    console.log("New note: ", change.doc.data());
-                    storeNoteLocally(change.doc.id, change.doc.data(), dispatch);
-                } else if (change.type === 'updated') { // TODO: check if correct
-                    console.log("Updated note: ", change.doc.data());
-                    updateNoteLocally(change.doc.id, change.doc.data(), dispatch);
-                } 
-                // TODO: remove doc event
-
+                if (!snapshot.metadata.fromCache) {
+                    if (change.type === 'added') {
+                        console.log("New note: ", change.doc.data());
+                        storeNoteLocally(change.doc.id, change.doc.data(), dispatch);
+                    } else if (change.type === 'updated') { // TODO: check if correct
+                        console.log("Updated note: ", change.doc.data());
+                        updateNoteLocally(change.doc.id, change.doc.data(), dispatch);
+                    } 
+                    // TODO: remove doc event
+                }
                 // var source = snapshot.metadata.fromCache ? "local cache" : "server";
                 // console.log("Data came from " + source);
             });
@@ -227,7 +228,7 @@ function storeNoteLocally(id, data, dispatch) {
     });
 }
 
-function storeNoteRemotely(note, dispatch): Promise<any> {
+function storeNoteRemotely(note: Note, dispatch): Promise<any> {
     return db.collection('notes').add({
         title: note.title,
         body: note.body,
@@ -246,9 +247,32 @@ function storeNoteRemotely(note, dispatch): Promise<any> {
         })
     })
     .catch(function(error) {
-        console.error("Error adding document: ", error);
+        console.error('Error adding document: ', error);
     });
+}
 
+function updateNoteRemotely(note: Note): Promise<any> {
+    return db.collection('notes').doc(note.id).set({
+        title: note.title,
+        body: note.body,
+    })
+    .then(function(docRef) {
+        console.log(`Document ${note.id} updated`);
+    })
+    .catch(function(error) {
+        console.error(`Error updating document ${note.id}: `, error);
+    });
+}
+
+
+function removeNoteRemotely(id: string): Promise<any> {
+    return db.collection('notes').doc(id).delete()
+        .then(() => {
+            console.log(`Remote document ${id} removed`);
+        })
+        .catch((error) => {
+            console.error(`Error removing document ${id}: `, error);
+        });
 }
 
 export default {
@@ -258,4 +282,7 @@ export default {
     logout,
     sync,
     listenToChanges,
+    storeNoteRemotely,
+    updateNoteRemotely,
+    removeNoteRemotely,
 };

@@ -58,8 +58,8 @@ export function reducer(state: State, action: any): State {
             return {
                 ...state,
                 hash: state.hash + 1,
-                notes: addNote(state.notes, action.content.id || 'local:' + (state.lastId + 1), action.content),
-                lastId: state.lastId + 1,
+                notes: addNote(state.notes, action.content.id, action.content), // TODO: remove middle param
+                lastId: Math.max(state.lastId, action.content.id),
             };
         case 'modifyNote':
             if (action.id == null) return state;
