@@ -140,8 +140,7 @@ function logout(): Promise<any> {
     return firebase.auth().signOut();
 }
 
-// TODO: should be promise
-function sync(state: State, dispatch): Promise<any> {
+function sync(state: State, dispatch: Function): Promise<any> {
     if (!db) {
         console.error('DB not initialised');
         return new Promise((resolve, reject) => reject(new Error('DB not initialised')));
@@ -153,7 +152,7 @@ function sync(state: State, dispatch): Promise<any> {
         });
 }
 
-function listenToChanges(state: State, dispatch) {
+function listenToChanges(state: State, dispatch: Function) {
     if (!db) {
         console.error('DB not initialised');
         return;
@@ -161,26 +160,27 @@ function listenToChanges(state: State, dispatch) {
 
     db.collection('notes')
         .onSnapshot({includeMetadataChanges: true}, (snapshot) => {
-            snapshot.docChanges().forEach(function(change) {
-                console.log('change.type', change.type);
-                if (!snapshot.metadata.fromCache) {
+            console.log('snapshot', snapshot);
+            if (!snapshot.metadata.fromCache && !snapshot.metadata.hasPendingWrites) {
+                snapshot.docChanges().forEach(function(change) {
+                    console.log('change.type', change.type);
                     if (change.type === 'added') {
-                        console.log("New note: ", change.doc.data());
+                        console.log('New remote note received: ', change.doc.id, change.doc.data());
                         storeNoteLocally(change.doc.id, change.doc.data(), dispatch);
-                    } else if (change.type === 'updated') { // TODO: check if correct
-                        console.log("Updated note: ", change.doc.data());
+                    } else if (change.type === 'modified') {
+                        console.log('Updated note received: ', change.doc.data());
                         updateNoteLocally(change.doc.id, change.doc.data(), dispatch);
+                    } else if (change.type === 'removed') {
+                        console.log('Delete notification received: ', change.doc.id);
+                        removeNoteLocally(change.doc.id, dispatch);
                     } 
-                    // TODO: remove doc event
-                }
-                // var source = snapshot.metadata.fromCache ? "local cache" : "server";
-                // console.log("Data came from " + source);
-            });
+                });
+            }
         });
 
 }
 
-function retrieveNotes(localNotes: Array<Note>, dispatch): Promise<any> {
+function retrieveNotes(localNotes: Array<Note>, dispatch: Function): Promise<any> {
     return db.collection('notes').get().then((querySnapshot) => {
         querySnapshot.forEach((doc) => {
             const remoteData = doc.data();
@@ -196,7 +196,7 @@ function retrieveNotes(localNotes: Array<Note>, dispatch): Promise<any> {
     });
 }
 
-function sendNotes(notes: Array<Note>, dispatch): Promise<any> {
+function sendNotes(notes: Array<Note>, dispatch: Function): Promise<any> {
     return Promise.all(
         notes.map((note) => {
             if (note.id.startsWith('local:')) {
@@ -209,6 +209,7 @@ function sendNotes(notes: Array<Note>, dispatch): Promise<any> {
 function updateNoteLocally(id, data, dispatch) {
     dispatch({
         type: 'modifyNote',
+        source: 'remote',
         id: id,
         content: {
             title: data.title,
@@ -220,6 +221,7 @@ function updateNoteLocally(id, data, dispatch) {
 function storeNoteLocally(id, data, dispatch) {
     dispatch({
         type: 'addNote',
+        source: 'remote',
         content: {
             id: id,
             title: data.title,
@@ -228,16 +230,27 @@ function storeNoteLocally(id, data, dispatch) {
     });
 }
 
-function storeNoteRemotely(note: Note, dispatch): Promise<any> {
+function removeNoteLocally(id, dispatch) {
+    dispatch({
+        type: 'removeNote',
+        source: 'remote',
+        id: id,
+    });
+}
+
+function storeNoteRemotely(note: Note, dispatch: Function): Promise<any> {
+    if (status !== 'initialised') return new Promise((resolve, reject) => resolve());
+
     return db.collection('notes').add({
         title: note.title,
         body: note.body,
     })
     .then(function(docRef) {
-        console.log("Document written with ID: ", docRef.id);
+        console.log('Document written with ID: ', docRef.id);
         // modify local id to match cloud id
         dispatch({
             type: 'modifyNote',
+            source: 'remote',
             id: note.id,
             content: {
                 id: docRef.id,
@@ -252,6 +265,8 @@ function storeNoteRemotely(note: Note, dispatch): Promise<any> {
 }
 
 function updateNoteRemotely(note: Note): Promise<any> {
+    if (status !== 'initialised') return new Promise((resolve, reject) => resolve());
+
     return db.collection('notes').doc(note.id).set({
         title: note.title,
         body: note.body,
@@ -264,8 +279,9 @@ function updateNoteRemotely(note: Note): Promise<any> {
     });
 }
 
-
 function removeNoteRemotely(id: string): Promise<any> {
+    if (status !== 'initialised') return new Promise((resolve, reject) => resolve());
+
     return db.collection('notes').doc(id).delete()
         .then(() => {
             console.log(`Remote document ${id} removed`);

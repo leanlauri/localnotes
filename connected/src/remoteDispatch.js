@@ -3,18 +3,12 @@
  * 
  * @flow
  */
-import type { State } from './notesReducer';
-
-import { useEffect } from 'react';
-import firebase from 'firebase/app';
 import connector from './firebaseConnector';
-
-const db = firebase.firestore();
 
 function createRemoteDispatch(dispatch: Function): Function {
     return (action) => {
         dispatch(action);
-        handleAction(action, dispatch);
+        if (action.source !== 'remote') handleAction(action, dispatch);
     }
 }
 

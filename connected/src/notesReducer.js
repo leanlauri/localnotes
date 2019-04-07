@@ -20,11 +20,14 @@ export type State = {|
     connectState?: ConnectState,
 |};
 
-function addNote(notes: Array<Note>, id: string, content: Note): Array<Note> {
+function addNote(notes: Array<Note>, content: Note): Array<Note> {
+    const index = notes.findIndex(note => note.id === content.id);
+    if (index !== -1) return notes; // cannot add with same id
+
+    console.log('adding note with id: ', content.id);
     return notes
         .concat({
             ...content,
-            id,
         });
 }
 
@@ -58,7 +61,7 @@ export function reducer(state: State, action: any): State {
             return {
                 ...state,
                 hash: state.hash + 1,
-                notes: addNote(state.notes, action.content.id, action.content), // TODO: remove middle param
+                notes: addNote(state.notes, action.content),
                 lastId: Math.max(state.lastId, action.content.id),
             };
         case 'modifyNote':

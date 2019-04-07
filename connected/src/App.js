@@ -10,11 +10,13 @@ import localStorageReducer from './localStorageReducer';
 import LoginBarWithBanners from './LoginBarWithBanners';
 import NotesContainer from './NotesContainer';
 import connector from './firebaseConnector';
+import createRemoteDispatch from './remoteDispatch';
 
 export const StateContext = createContext<any, any>([null, null]);
 
 function App(): Node {
-  const [state, dispatch] = localStorageReducer();
+  const [state, localDispatch] = localStorageReducer();
+  const dispatch = createRemoteDispatch(localDispatch);
   useEffect(() => {
     if (state.loginEmail != null && state.connectState === 'connected') {
       connector.connect();
