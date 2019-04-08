@@ -11,60 +11,54 @@ import config from './firebaseConfig.json';
 const firebase = require('firebase/app');
 require('firebase/auth');
 require('firebase/firestore');
-// declare var firebase: any;
 
 type Status = 'none' | 'initialised' | 'init_failed';
 
 let status: Status = 'none';
 let db;
+let user;
 const actionCodeSettings = {
     // URL you want to redirect back to. The domain (www.example.com) for this
     // URL must be whitelisted in the Firebase Console.
     url: 'http://localhost:3000/finishLogin/',
-    //url: 'https://www.example.com/finishSignUp?cartId=1234',
-    // This must be true.
     handleCodeInApp: true,
-    // iOS: {
-    //   bundleId: 'com.example.ios'
-    // },
-    // android: {
-    //   packageName: 'com.example.android',
-    //   installApp: true,
-    //   minimumVersion: '12'
-    // },
-    // dynamicLinkDomain: 'example.page.link'
 };
 
 function init() {
     // if (firebase) {
     console.log('Initialising Firebase');
     firebase.initializeApp(config);
-    initDb();
-    status = 'initialised';
-    // } else {
-    //     console.log('Firebase script not loaded. Cannot initialise.');
+    // user = firebase.auth.currentUser;
+    // console.log('user', user);
+    // if (!user) {
     //     status = 'init_failed';
+    //     return;
     // }
+    initDb();
+    addUserStateListener();
+    status = 'initialised';
+}
+
+function addUserStateListener() {
+    firebase.auth().onAuthStateChanged((userObject) => {
+        console.log('authStateChanged, user:', userObject);
+        if (userObject) {
+            user = userObject;
+        } else {
+            user = null;
+        }
+      });
 }
 
 function initDb() {
-    // var db = firebase.firestore();
     db = firebase.firestore();
     db.enablePersistence()
         .catch(function(err) {
             console.error('Firestore: Failed to enable offline persistence:', err && err.code);
-            // if (err.code == 'failed-precondition') {
-            //     // Multiple tabs open, persistence can only be enabled
-            //     // in one tab at a a time.
-            //     // ...
-            // } else if (err.code == 'unimplemented') {
-            //     // The current browser does not support all of the
-            //     // features required to enable persistence
-            //     // ...
-            // }
         });
 }
 
+// TODO: refactor this. Roughly: init() -> sync init library and db -> async event fired saying logged in -> sync docs from that
 function connect(): boolean {
     if (status === 'none') init();
     if (status === 'init_failed') {
@@ -74,11 +68,6 @@ function connect(): boolean {
 
     return true;
 }
-
-// const createActionCodeSettings = (sessionId: string) => ({
-//     ...actionCodeSettingsBase,
-//     url:  actionCodeSettingsBase.url + sessionId,
-// });
 
 function startLogin(email: string): Promise<any> {
     if (!connect()) return new Promise((resolve, reject) => reject(new Error('Cannot connect')));
@@ -145,7 +134,8 @@ function sync(state: State, dispatch: Function): Promise<any> {
         console.error('DB not initialised');
         return new Promise((resolve, reject) => reject(new Error('DB not initialised')));
     }
-
+    if (!user) return new Promise((resolve, reject) => reject(new Error('Not logged in')));
+    
     return retrieveNotes(state.notes, dispatch)
         .then(() => {
             return sendNotes(state.notes, dispatch);            
@@ -157,7 +147,8 @@ function listenToChanges(state: State, dispatch: Function) {
         console.error('DB not initialised');
         return;
     }
-
+    // if (!user) return new Promise((resolve, reject) => reject(new Error('Not logged in')));
+    
     db.collection('notes')
         .onSnapshot({includeMetadataChanges: true}, (snapshot) => {
             console.log('snapshot', snapshot);
@@ -240,10 +231,12 @@ function removeNoteLocally(id, dispatch) {
 
 function storeNoteRemotely(note: Note, dispatch: Function): Promise<any> {
     if (status !== 'initialised') return new Promise((resolve, reject) => resolve());
+    if (!user) return new Promise((resolve, reject) => reject(new Error('Not logged in')));
 
     return db.collection('notes').add({
         title: note.title,
         body: note.body,
+        owner: user.uid,
     })
     .then(function(docRef) {
         console.log('Document written with ID: ', docRef.id);
@@ -266,6 +259,7 @@ function storeNoteRemotely(note: Note, dispatch: Function): Promise<any> {
 
 function updateNoteRemotely(note: Note): Promise<any> {
     if (status !== 'initialised') return new Promise((resolve, reject) => resolve());
+    if (!user) return new Promise((resolve, reject) => reject(new Error('Not logged in')));
 
     return db.collection('notes').doc(note.id).set({
         title: note.title,
@@ -281,6 +275,7 @@ function updateNoteRemotely(note: Note): Promise<any> {
 
 function removeNoteRemotely(id: string): Promise<any> {
     if (status !== 'initialised') return new Promise((resolve, reject) => resolve());
+    if (!user) return new Promise((resolve, reject) => reject(new Error('Not logged in')));
 
     return db.collection('notes').doc(id).delete()
         .then(() => {

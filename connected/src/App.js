@@ -19,7 +19,7 @@ function App(): Node {
   const dispatch = createRemoteDispatch(localDispatch);
   useEffect(() => {
     if (state.loginEmail != null && state.connectState === 'connected') {
-      connector.connect();
+      if (!connector.connect()) return;
       connector.sync(state, dispatch)
         .then(() => {
           connector.listenToChanges(state, dispatch);
