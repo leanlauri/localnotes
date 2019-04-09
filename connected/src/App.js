@@ -12,11 +12,13 @@ import LoginBarWithBanners from './LoginBarWithBanners';
 import NotesContainer from './NotesContainer';
 import connector from './firebaseConnector';
 import createRemoteDispatch from './remoteDispatch';
+import { Spinner } from 'react-bootstrap';
 
 export const StateContext = createContext<any, any>([null, null]);
 
 function isLoggedIn(state: State): boolean {
-  return state.loginEmail != null && state.connectState === 'loggedIn';
+  // TODO: broken! add loginFlowStatus
+  return state.loginEmail != null && state.loginFlowStatus === 'completed';
 }
 
 function App(): Node {
@@ -46,9 +48,11 @@ function App(): Node {
       <Router>
         <Route
           path="/finishLogin/"
-          render={({match, history}) => (
-            <HandleLogin state={state} dispatch={dispatch} match={match} history={history}/>
-          )}/>
+          render={({match, history}) => {
+            handleLogin(state, dispatch, match, history);
+            return <Spinner />
+            // <HandleLogin state={state} dispatch={dispatch} match={match} history={history}/>
+          }}/>
           
         <Route  
           path="/:section?"
@@ -71,42 +75,29 @@ function App(): Node {
   );
 }
 
-function HandleLogin({ state, dispatch, match, history }): Node {
-  connector.connect();
-  // if (!match.params.sessionId) throw new Error('No session id');
-  // TODO: check if loginEmail is null -- if login started from a different device -- and prompt for email
-  if (state.loginEmail == null) {
-    console.log('No login email in state');
+async function handleLogin(state, dispatch, match, history) {
+  try {
+    await connector.init();
+    if (state.loginEmail == null) {
+      console.log('No login email in state');
+      history.push('/');
+      dispatch({
+        type: 'loginFailed',
+      });
+      return;
+    }
+    await connector.finishLogin(window.location.href, state.loginEmail);
     history.push('/');
+    dispatch({
+      type: 'completeLogin',
+    });
+
+  } catch (error) {
+    console.log('Error completing login:', error, error && error.code);
     dispatch({
       type: 'loginFailed',
     });
-    return null;
   }
-  connector.finishLogin(window.location.href, state.loginEmail)
-    .then(function(result) {
-      // Clear email from storage.
-      history.push('/');
-      dispatch({
-        type: 'completeLogin',
-      });
-      // window.localStorage.removeItem('emailForSignIn');
-      // You can access the new user via result.user
-      // Additional user info profile not available via:
-      // result.additionalUserInfo.profile == null
-      // You can check if the user is new or existing:
-      // result.additionalUserInfo.isNewUser
-    })
-    .catch(function(error) {
-        console.log('error', error, error && error.code);
-        dispatch({
-          type: 'loginFailed',
-        });
-        // Some error occurred, you can inspect the code: error.code
-        // Common errors could be invalid email and invalid or expired OTPs.
-    });
-
-  return null;
 }
 
 export default App;

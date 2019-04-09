@@ -8,7 +8,7 @@ import { Navbar, Nav } from 'react-bootstrap';
 import LoginModal from './LoginModal';
 import LoginUpSellBanner from './LoginUpSellBanner';
 import { StateContext } from './App';
-import ErrorBanner from './ErrorBanner';
+import LoginStatusBanner from './LoginStatusBanner';
 import connector from './firebaseConnector';
 
 function LoginBarWithBanners(): Node {
@@ -99,8 +99,8 @@ function LoginBarWithBanners(): Node {
                     onAction={() => setLoginDialogVisible(true)}/>
                 : null
             }
-            <ErrorBanner
-                status={state.connectState}
+            <LoginStatusBanner
+                status={connector.getStatus()}
                 onLogin={() => setLoginDialogVisible(true)}/>
         </>
     );

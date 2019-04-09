@@ -9,7 +9,7 @@ export type Note = {|
     body: ?string,
 |};
 
-export type ConnectState = 'loginStarted' | 'loggedIn' | 'loginFailed' | 'tokenRejected';
+export type ConnectState = 'loginStarted' | 'loggedIn' | 'loginFailed' | 'tokenRejected'; // TODO: not needed?
 
 export type State = {|
     hash: number,

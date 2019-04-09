@@ -3,17 +3,17 @@
  * @flow
  */
 import type { Node } from 'react';
-import type { ConnectState } from './notesReducer';
+import type { Status } from './firebaseConnector';
 
 import Alert from 'react-bootstrap/Alert';
 import React, { useState } from 'react';
 
 type Props = {|
-    status: ConnectState,
+    status: Status,
     onLogin: () => void,
 |};
 
-function ErrorBanner({status, onLogin}: Props): Node {
+function LoginStatusBanner({status, onLogin}: Props): Node {
     const [showingWarning, setShowingWarning] = useState(true);
     const [showingError, setShowingError] = useState(true);
     const onClick = (event) => {
@@ -48,7 +48,6 @@ function ErrorBanner({status, onLogin}: Props): Node {
                 </Alert>
             );
         case 'loginFailed':
-        case 'tokenRejected':
             return (
                 <Alert
                     dismissible
@@ -68,4 +67,4 @@ function ErrorBanner({status, onLogin}: Props): Node {
     }
 }
 
-export default ErrorBanner;
+export default LoginStatusBanner;

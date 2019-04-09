@@ -1,6 +1,5 @@
 /**
  * TODO: limit access to owner only
- * TODO: enable offline mode and listening to snapsnots
  * 
  * @flow
  */
@@ -12,7 +11,14 @@ const firebase = require('firebase/app');
 require('firebase/auth');
 require('firebase/firestore');
 
-type Status = 'none' | 'in_progress' | 'initialised' | 'logged_in' | 'init_failed';
+export type Status = 
+    'none' | 
+    'inProgress' | 
+    'initialised' | 
+    'loginStarted' |
+    'loggedIn' | 
+    'loginFailed' |
+    'initFailed';
 
 let status: Status = 'none';
 let db;
@@ -24,17 +30,21 @@ const actionCodeSettings = {
     handleCodeInApp: true,
 };
 
+function getStatus(): Status {
+    return status;
+}
+
 async function init(): Promise<any> {
-    if (status === 'in_progress' || status === 'logged_in') return;
+    if (status === 'inProgress' || status === 'loggedIn') return;
     if (status === 'initialised') return addUserStateListener();
-    status = 'in_progress';
+    status = 'inProgress';
     // if (firebase) {
     console.log('Initialising Firebase');
     firebase.initializeApp(config);
     // user = firebase.auth.currentUser;
     // console.log('user', user);
     // if (!user) {
-    //     status = 'init_failed';
+    //     status = 'initFailed';
     //     return;
     // }
     initDb();
@@ -48,7 +58,7 @@ async function addUserStateListener(): Promise<any> {
             console.log('authStateChanged, user:', userObject);
             if (userObject) {
                 user = userObject;
-                status = 'logged_in';                
+                status = 'loggedIn';                
                 resolve();
             } else {
                 user = null;
@@ -68,7 +78,7 @@ function initDb() {
 // // TODO: refactor this. Roughly: init() -> sync init library and db -> async event fired saying logged in -> sync docs from that
 // function connect(): boolean {
 //     if (status === 'none') init();
-//     if (status === 'init_failed') {
+//     if (status === 'initFailed') {
 //         console.error('Connect failed.');
 //         return false;
 //     }
@@ -84,7 +94,10 @@ async function startLogin(email: string): Promise<any> {
 
     await firebase
         .auth()
-        .sendSignInLinkToEmail(email, actionCodeSettings);
+        .sendSignInLinkToEmail(email, actionCodeSettings)
+        .then(() => {
+            status = 'loginStarted';
+        });
         // .then(function() {
         //     // The link was successfully sent. Inform the user.
         //     // Save the email locally so you don't need to ask the user for it again
@@ -114,7 +127,14 @@ async function finishLogin(address: string, email: string): Promise<any> {
         // The client SDK will parse the code from the link for you.
         await firebase
             .auth()
-            .signInWithEmailLink(email, window.location.href);
+            .signInWithEmailLink(email, window.location.href)
+            .then((result) => {
+                status = 'loggedIn';
+            })
+            .catch((error) => {
+                status = 'loginFailed';
+                throw error;
+            });
             // .then(function(result) {
             //     // Clear email from storage.
             //     window.localStorage.removeItem('emailForSignIn');
@@ -129,6 +149,7 @@ async function finishLogin(address: string, email: string): Promise<any> {
             //     // Common errors could be invalid email and invalid or expired OTPs.
             // });
     } else {
+        status = 'loginFailed';
         throw new Error('Address is not a valid login link');
         // return new Promise((resolve, reject) => {
         //     reject(new Error('Address is not a valid login link'));
@@ -299,6 +320,7 @@ function removeNoteRemotely(id: string): Promise<any> {
 
 export default {
     init,
+    getStatus,
     startLogin,
     finishLogin,
     logout,
