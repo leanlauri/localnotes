@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 type Props = {|
   show: boolean,
   onCancel: () => void,
-  onConfirm: (string) => void,
+  onConfirm: (string) => Promise<any>,
 |};
 
 function LoginModal({show, onCancel, onConfirm}: Props): Node {

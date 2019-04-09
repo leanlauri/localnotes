@@ -9,7 +9,7 @@ export type Note = {|
     body: ?string,
 |};
 
-export type ConnectState = 'loginStarted' | 'connected' | 'loginFailed' | 'networkError' |'tokenRejected';
+export type ConnectState = 'loginStarted' | 'loggedIn' | 'loginFailed' | 'tokenRejected';
 
 export type State = {|
     hash: number,
@@ -89,7 +89,7 @@ export function reducer(state: State, action: any): State {
         case 'completeLogin':
             return {
                 ...state,
-                connectState: 'connected',
+                connectState: 'loggedIn',
             };
         case 'loginFailed':
             return {

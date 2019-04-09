@@ -12,7 +12,7 @@ const firebase = require('firebase/app');
 require('firebase/auth');
 require('firebase/firestore');
 
-type Status = 'none' | 'initialised' | 'init_failed';
+type Status = 'none' | 'in_progress' | 'initialised' | 'logged_in' | 'init_failed';
 
 let status: Status = 'none';
 let db;
@@ -24,7 +24,10 @@ const actionCodeSettings = {
     handleCodeInApp: true,
 };
 
-function init() {
+async function init(): Promise<any> {
+    if (status === 'in_progress' || status === 'logged_in') return;
+    if (status === 'initialised') return addUserStateListener();
+    status = 'in_progress';
     // if (firebase) {
     console.log('Initialising Firebase');
     firebase.initializeApp(config);
@@ -35,19 +38,23 @@ function init() {
     //     return;
     // }
     initDb();
-    addUserStateListener();
     status = 'initialised';
+    return addUserStateListener();
 }
 
-function addUserStateListener() {
-    firebase.auth().onAuthStateChanged((userObject) => {
-        console.log('authStateChanged, user:', userObject);
-        if (userObject) {
-            user = userObject;
-        } else {
-            user = null;
-        }
-      });
+async function addUserStateListener(): Promise<any> {
+    return new Promise((resolve, reject) => {
+        firebase.auth().onAuthStateChanged((userObject) => {
+            console.log('authStateChanged, user:', userObject);
+            if (userObject) {
+                user = userObject;
+                status = 'logged_in';                
+                resolve();
+            } else {
+                user = null;
+            }
+          });
+    });
 }
 
 function initDb() {
@@ -58,21 +65,24 @@ function initDb() {
         });
 }
 
-// TODO: refactor this. Roughly: init() -> sync init library and db -> async event fired saying logged in -> sync docs from that
-function connect(): boolean {
-    if (status === 'none') init();
-    if (status === 'init_failed') {
-        console.error('Connect failed.');
-        return false;
-    }
+// // TODO: refactor this. Roughly: init() -> sync init library and db -> async event fired saying logged in -> sync docs from that
+// function connect(): boolean {
+//     if (status === 'none') init();
+//     if (status === 'init_failed') {
+//         console.error('Connect failed.');
+//         return false;
+//     }
 
-    return true;
-}
+//     return true;
+// }
 
-function startLogin(email: string): Promise<any> {
-    if (!connect()) return new Promise((resolve, reject) => reject(new Error('Cannot connect')));
+async function startLogin(email: string): Promise<any> {
+    await init();
+     // TODO: handle init errors somehow?
+    if (status !== 'initialised') return;
+    // if (!connect()) return new Promise((resolve, reject) => reject(new Error('Cannot connect')));
 
-    return firebase
+    await firebase
         .auth()
         .sendSignInLinkToEmail(email, actionCodeSettings);
         // .then(function() {
@@ -87,7 +97,7 @@ function startLogin(email: string): Promise<any> {
 }
 
 // const address = window.location.href;
-function finishLogin(address: string, email: string): Promise<any> {
+async function finishLogin(address: string, email: string): Promise<any> {
     // Confirm the link is a sign-in with email link.
     if (firebase.auth().isSignInWithEmailLink(address)) {
         // Additional state parameters can also be passed via URL.
@@ -102,7 +112,7 @@ function finishLogin(address: string, email: string): Promise<any> {
         // email = window.prompt('Please provide your email for confirmation');
         // }
         // The client SDK will parse the code from the link for you.
-        return firebase
+        await firebase
             .auth()
             .signInWithEmailLink(email, window.location.href);
             // .then(function(result) {
@@ -119,9 +129,10 @@ function finishLogin(address: string, email: string): Promise<any> {
             //     // Common errors could be invalid email and invalid or expired OTPs.
             // });
     } else {
-        return new Promise((resolve, reject) => {
-            reject(new Error('Address is not a valid login link'));
-        });
+        throw new Error('Address is not a valid login link');
+        // return new Promise((resolve, reject) => {
+        //     reject(new Error('Address is not a valid login link'));
+        // });
     }
 }
 
@@ -287,7 +298,7 @@ function removeNoteRemotely(id: string): Promise<any> {
 }
 
 export default {
-    connect,
+    init,
     startLogin,
     finishLogin,
     logout,

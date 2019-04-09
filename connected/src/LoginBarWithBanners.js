@@ -31,28 +31,39 @@ function LoginBarWithBanners(): Node {
         }
     };
 
-    const onLogin = (email) => {
+    const onLogin = async (email) => {
         setLoginDialogVisible(false);
         console.log('login with:', email);
-        connector
-            .startLogin(email)
-            .then(function() {
-                // The link was successfully sent. Inform the user.
-                // Save the email locally so you don't need to ask the user for it again
-                // if they open the link on the same device.
-                dispatch({
-                    type: 'startLogin',
-                    loginEmail: email,
-                });        
-            })
-            .catch(function(error) {
-                // Some error occurred, you can inspect the code: error.code
-                console.log('Error sending login email:', error, error && error.code);
-                dispatch({
-                    type: 'logout',
-                });
-        
+        try {
+            await connector.startLogin(email);
+            dispatch({
+                type: 'startLogin',
+                loginEmail: email,
+            });        
+        } catch (error) {
+            console.log('Error sending login email:', error, error && error.code);
+            dispatch({
+                type: 'logout',
             });
+        }
+
+            // .then(function() {
+            //     // The link was successfully sent. Inform the user.
+            //     // Save the email locally so you don't need to ask the user for it again
+            //     // if they open the link on the same device.
+            //     dispatch({
+            //         type: 'startLogin',
+            //         loginEmail: email,
+            //     });        
+            // })
+            // .catch(function(error) {
+            //     // Some error occurred, you can inspect the code: error.code
+            //     console.log('Error sending login email:', error, error && error.code);
+            //     dispatch({
+            //         type: 'logout',
+            //     });
+        
+            // });
         
     };
 

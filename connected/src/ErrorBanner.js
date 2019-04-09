@@ -36,7 +36,7 @@ function ErrorBanner({status, onLogin}: Props): Node {
                     </p>
                 </Alert>
             );
-        case 'connected':
+        case 'loggedIn':
             return (
                 <Alert
                     dismissible
@@ -45,20 +45,6 @@ function ErrorBanner({status, onLogin}: Props): Node {
                     onClose={() => setShowingWarning(false)}
                 >
                     <Alert.Heading>Logged in</Alert.Heading>
-                </Alert>
-            );
-        case 'networkError':
-            return (
-                <Alert
-                    dismissible
-                    variant="warning"
-                    show={showingWarning}
-                    onClose={() => setShowingWarning(false)}
-                >
-                    <Alert.Heading>Connection lost</Alert.Heading>
-                    <p>
-                        Working in offline mode until network is available.
-                    </p>
                 </Alert>
             );
         case 'loginFailed':

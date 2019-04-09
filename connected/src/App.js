@@ -2,6 +2,7 @@
  * @flow
  */
 import type { Node } from 'react';
+import type { State } from './notesReducer';
 
 import React, { createContext, useEffect } from 'react';
 import { BrowserRouter as Router, Route } from "react-router-dom";
@@ -14,16 +15,29 @@ import createRemoteDispatch from './remoteDispatch';
 
 export const StateContext = createContext<any, any>([null, null]);
 
+function isLoggedIn(state: State): boolean {
+  return state.loginEmail != null && state.connectState === 'loggedIn';
+}
+
 function App(): Node {
   const [state, localDispatch] = localStorageReducer();
-  const dispatch = createRemoteDispatch(localDispatch);
+  const dispatch = isLoggedIn(state) ? createRemoteDispatch(localDispatch) : localDispatch;
   useEffect(() => {
-    if (state.loginEmail != null && state.connectState === 'connected') {
-      if (!connector.connect()) return;
-      connector.sync(state, dispatch)
-        .then(() => {
-          connector.listenToChanges(state, dispatch);
-        });
+    if (isLoggedIn(state)) {
+      (async () => {
+        try {
+          await connector.init();
+          await connector.sync(state, dispatch);
+          connector.listenToChanges(state, dispatch);            
+          // if (!connector.connect()) return;
+          // connector.sync(state, dispatch)
+          //   .then(() => {
+          //     connector.listenToChanges(state, dispatch);
+          //   });
+        } catch (error) {
+          console.log('Error synchronising data:', error);
+        }
+      })();
    }
   }, [state.loginEmail, state.connectState]);
 

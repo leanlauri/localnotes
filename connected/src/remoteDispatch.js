@@ -4,7 +4,7 @@
  * @flow
  */
 import connector from './firebaseConnector';
-
+  
 function createRemoteDispatch(dispatch: Function): Function {
     return (action) => {
         dispatch(action);
