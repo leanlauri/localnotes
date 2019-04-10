@@ -9,14 +9,26 @@ export type Note = {|
     body: ?string,
 |};
 
-export type ConnectState = 'loginStarted' | 'loggedIn' | 'loginFailed' | 'tokenRejected'; // TODO: not needed?
-
-export type State = {|
+export type ConnectState = 'inProgress' | 'initialised' | 'initFailed' | 'loginStarted' | 'loggedIn' | 'loginFailed';
+// export type Status = 
+//     'none' | 
+//     'inProgress' | 
+//     'initialised' | 
+//     'loginStarted' |
+//     'loggedIn' | 
+//     'loginFailed' |
+//     'initFailed';
+export type DataState = {|
     hash: number,
     notes: Array<Note>,
-    lastId: number,
+    // lastId: number,
     loginEmail?: string,
+    loginFlowStage?: 'started' | 'completed',
     upSellDisabled?: boolean,
+|};
+
+export type State = {|
+    data: DataState,
     connectState?: ConnectState,
 |};
 
@@ -56,13 +68,76 @@ function removeNote(notes: Array<Note>, id: string): Array<Note> {
 }
 
 export function reducer(state: State, action: any): State {
+    console.log('reducer action:', action.type, action);
+    switch (action.type) {
+        case 'startLogin':
+            if (action.loginEmail == null) return state;
+            return {
+                ...state,
+                data: {
+                    ...state.data,
+                    loginEmail: action.loginEmail,
+                    loginFlowStage: 'started',
+                    upSellDisabled: true,
+                },
+                connectState: 'loginStarted',
+            };
+        case 'completeLogin':
+            return {
+                ...state,
+                data: {
+                    ...state.data,
+                    loginFlowStage: 'completed',
+                },
+                connectState: 'loggedIn',
+            };
+        case 'loginFailed':
+            return {
+                ...state,
+                data: {
+                    ...state.data,
+                    loginEmail: undefined,
+                },
+                connectState: 'loginFailed',
+            };
+        case 'logout':
+            return {
+                ...state,
+                data: {
+                    ...state.data,
+                    loginEmail: undefined,
+                    loginFlowStage: undefined,
+                },
+                connectState: undefined,
+            };
+        case 'setConnectState':
+            return {
+                ...state,
+                connectState: action.connectState,
+            };            
+        case 'disableUpSell':
+            return {
+                ...state,
+                data: {
+                    ...state.data,
+                    upSellDisabled: true,
+                },
+            };
+        default: return {
+            ...state,
+            data: dataReducer(state.data, action),
+        };
+    }
+}
+
+function dataReducer(state: DataState, action: any): DataState {
     switch (action.type) {
         case 'addNote':
             return {
                 ...state,
                 hash: state.hash + 1,
                 notes: addNote(state.notes, action.content),
-                lastId: Math.max(state.lastId, action.content.id),
+                // lastId: Math.max(state.lastId, action.content.id),
             };
         case 'modifyNote':
             if (action.id == null) return state;
@@ -77,36 +152,6 @@ export function reducer(state: State, action: any): State {
                 ...state,
                 hash: state.hash + 1,
                 notes: removeNote(state.notes, action.id),
-            };
-        case 'startLogin':
-            if (action.loginEmail == null) return state;
-            return {
-                ...state,
-                loginEmail: action.loginEmail,
-                upSellDisabled: true,
-                connectState: 'loginStarted',
-            };
-        case 'completeLogin':
-            return {
-                ...state,
-                connectState: 'loggedIn',
-            };
-        case 'loginFailed':
-            return {
-                ...state,
-                loginEmail: undefined,
-                connectState: 'loginFailed',
-            };
-        case 'logout':
-            return {
-                ...state,
-                loginEmail: undefined,
-                connectState: undefined,
-            };
-        case 'disableUpSell':
-            return {
-                ...state,
-                upSellDisabled: true,
             };
         default: throw new Error('unknown action: ' + action.type);
     }

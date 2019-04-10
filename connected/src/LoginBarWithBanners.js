@@ -22,10 +22,10 @@ function LoginBarWithBanners(): Node {
                 break;
             case '#logout':
                 // TODO: handle login errors
-                connector.logout();
-                dispatch({
-                    type: 'logout'
-                });
+                connector.logout(state, dispatch);
+                // dispatch({
+                //     type: 'logout'
+                // });
                 break;
             default: break;
         }
@@ -35,11 +35,11 @@ function LoginBarWithBanners(): Node {
         setLoginDialogVisible(false);
         console.log('login with:', email);
         try {
-            await connector.startLogin(email);
-            dispatch({
-                type: 'startLogin',
-                loginEmail: email,
-            });        
+            await connector.startLogin(email, state, dispatch);
+            // dispatch({
+            //     type: 'startLogin',
+            //     loginEmail: email,
+            // });        
         } catch (error) {
             console.log('Error sending login email:', error, error && error.code);
             dispatch({
@@ -84,14 +84,14 @@ function LoginBarWithBanners(): Node {
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav className="mr-auto"></Nav>
                     <Nav>
-                        {state.loginEmail
+                        {state.data.loginFlowStage === 'completed'
                             ? <Nav.Link href="#logout">Logout</Nav.Link>
                             : <Nav.Link href="#login">Login</Nav.Link>
                         }
                     </Nav>
                 </Navbar.Collapse>
             </Navbar>
-            {(!state.loginEmail && !state.upSellDisabled)
+            {(!state.data.loginFlowStage && !state.data.upSellDisabled)
                 ? <LoginUpSellBanner
                     onDismiss={() => dispatch({
                         type: 'disableUpSell'
@@ -100,7 +100,7 @@ function LoginBarWithBanners(): Node {
                 : null
             }
             <LoginStatusBanner
-                status={connector.getStatus()}
+                status={state.connectState}
                 onLogin={() => setLoginDialogVisible(true)}/>
         </>
     );

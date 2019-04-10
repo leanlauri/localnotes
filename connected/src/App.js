@@ -17,20 +17,21 @@ import { Spinner } from 'react-bootstrap';
 export const StateContext = createContext<any, any>([null, null]);
 
 function isLoggedIn(state: State): boolean {
-  // TODO: broken! add loginFlowStatus
-  return state.loginEmail != null && state.loginFlowStatus === 'completed';
+  return state.data.loginFlowStage === 'completed' && state.connectState === 'loggedIn';
 }
 
 function App(): Node {
   const [state, localDispatch] = localStorageReducer();
-  const dispatch = isLoggedIn(state) ? createRemoteDispatch(localDispatch) : localDispatch;
+  const dispatch = isLoggedIn(state) ? createRemoteDispatch(state, localDispatch) : localDispatch;
   useEffect(() => {
-    if (isLoggedIn(state)) {
+    if (state.data.loginFlowStage === 'completed') {
       (async () => {
         try {
-          await connector.init();
-          await connector.sync(state, dispatch);
-          connector.listenToChanges(state, dispatch);            
+          const user = await connector.init(state, dispatch);
+          if (user) {
+            await connector.sync(state, dispatch);
+            connector.listenToChanges(state, dispatch);
+          }
           // if (!connector.connect()) return;
           // connector.sync(state, dispatch)
           //   .then(() => {
@@ -41,7 +42,7 @@ function App(): Node {
         }
       })();
    }
-  }, [state.loginEmail, state.connectState]);
+  }, [state.data.loginEmail, state.data.loginFlowStage]);
 
   return (
     <div className="App">
@@ -77,8 +78,8 @@ function App(): Node {
 
 async function handleLogin(state, dispatch, match, history) {
   try {
-    await connector.init();
-    if (state.loginEmail == null) {
+    await connector.init(state, dispatch);
+    if (state.data.loginEmail == null) {
       console.log('No login email in state');
       history.push('/');
       dispatch({
@@ -86,17 +87,17 @@ async function handleLogin(state, dispatch, match, history) {
       });
       return;
     }
-    await connector.finishLogin(window.location.href, state.loginEmail);
+    await connector.finishLogin(window.location.href, state.data.loginEmail, state, dispatch);
     history.push('/');
-    dispatch({
-      type: 'completeLogin',
-    });
+    // dispatch({
+    //   type: 'completeLogin',
+    // });
 
   } catch (error) {
     console.log('Error completing login:', error, error && error.code);
-    dispatch({
-      type: 'loginFailed',
-    });
+    // dispatch({
+    //   type: 'loginFailed',
+    // });
   }
 }
 

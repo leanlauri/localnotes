@@ -15,7 +15,7 @@ function NotesContainer(): Node {
         <>
             <Container >
                 <Row className="justify-content-md-center" >
-                {state.notes.map(item => 
+                {state.data.notes.map(item => 
                     <Col xs="12" sm="12" md="6" lg="4" xl="4" key={item.id}>
                         <NoteCard
                             content={item}
@@ -35,7 +35,7 @@ function NotesContainer(): Node {
                     <AddCard onClick={() => dispatch({
                         type: 'addNote',
                         content: {
-                            id: 'local:' + (state.lastId + 1),
+                            id: 'local:' + new Date().getTime(), //(state.lastId + 1),
                             title: 'New Note',
                             body: '',
                         }

@@ -3,7 +3,7 @@
  * 
  * @flow
  */
-import type { State } from './notesReducer';
+import type { DataState } from './notesReducer';
 
 import { useEffect } from 'react';
 import notesReducer from './notesReducer';
@@ -12,26 +12,32 @@ const LOCAL_STORAGE_KEY = 'appState';
 
 function initState() {
     console.log('loading');
-    let loadedState = localStorage.getItem(LOCAL_STORAGE_KEY) || '';
+    const storedItem = localStorage.getItem(LOCAL_STORAGE_KEY) || '';
+    let loadedDataState;
     try {
-        loadedState = JSON.parse(loadedState);
+        loadedDataState = JSON.parse(storedItem);
     } catch (e) {
-        loadedState = null;
+        loadedDataState = null;
     }
-    return loadedState || {hash: 0, lastId: 0, notes: []};
+    return {
+        data: loadedDataState || {
+            hash: 0,
+            notes: [],
+        },
+    };
 }
 
-function saveState(state: State) {
-    console.log('saving: ', state.hash);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+function saveState(dataState: DataState) {
+    console.log('saving: ', dataState.hash);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataState));
 }
 
 function localStorageReducer() {
     const [state, dispatch] = notesReducer(initState);
 
     useEffect(() => {
-        saveState(state);
-    }, [state]);
+        saveState(state.data);
+    }, [state.data]);
 
     return [state, dispatch];
 }

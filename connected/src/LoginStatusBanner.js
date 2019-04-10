@@ -3,13 +3,13 @@
  * @flow
  */
 import type { Node } from 'react';
-import type { Status } from './firebaseConnector';
+import type { ConnectState } from './notesReducer';
 
 import Alert from 'react-bootstrap/Alert';
 import React, { useState } from 'react';
 
 type Props = {|
-    status: Status,
+    status: ConnectState,
     onLogin: () => void,
 |};
 
@@ -45,6 +45,20 @@ function LoginStatusBanner({status, onLogin}: Props): Node {
                     onClose={() => setShowingWarning(false)}
                 >
                     <Alert.Heading>Logged in</Alert.Heading>
+                </Alert>
+            );
+        case 'initFailed':
+            return (
+                <Alert
+                    dismissible
+                    variant="danger"
+                    show={showingError}
+                    onClose={() => setShowingError(false)}
+                >
+                    <Alert.Heading>Connection failed</Alert.Heading>
+                    <p>
+                        Check your connection and try again.
+                    </p>
                 </Alert>
             );
         case 'loginFailed':
