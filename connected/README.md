@@ -1,13 +1,8 @@
 ## Local Notes
 
-A simple notebook web app (PWA) that is designed to be offline first, with extra functionality provided if a network connection is available.
+A simple notebook web app (PWA) that is designed to be offline first, with extra functionality provided if a network connection is available. This is the connected version that (optionally) stores notes to Firestore database.
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
-
-## TODO:
-
-* Add React Router (for email link)
-
 
 ## Available Scripts
 
