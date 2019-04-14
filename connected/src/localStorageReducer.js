@@ -27,7 +27,7 @@ function initState() {
 }
 
 function saveState(dataState: DataState) {
-    console.log('saving data to local storate');
+    console.log('saving data to local storage');
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataState));
 }
 
