@@ -58,6 +58,9 @@ function removeNote(notes: Array<Note>, id: string): Array<Note> {
         );
 }
 
+/**
+ * Reducer for actions that can modify both persistent (state.data) and non-persistent (state) data
+ */
 export function reducer(state: State, action: any): State {
     console.log('reducer action:', action.type, action);
     switch (action.type) {
@@ -105,14 +108,6 @@ export function reducer(state: State, action: any): State {
                 ...state,
                 connectState: action.connectState,
             };            
-        case 'disableUpSell':
-            return {
-                ...state,
-                data: {
-                    ...state.data,
-                    upSellDisabled: true,
-                },
-            };
         default: return {
             ...state,
             data: dataReducer(state.data, action),
@@ -120,6 +115,9 @@ export function reducer(state: State, action: any): State {
     }
 }
 
+/**
+ * Reducer for actions that only modify persistent data
+ */
 function dataReducer(state: DataState, action: any): DataState {
     switch (action.type) {
         case 'addNote':
@@ -139,6 +137,12 @@ function dataReducer(state: DataState, action: any): DataState {
                 ...state,
                 notes: removeNote(state.notes, action.id),
             };
+        case 'disableUpSell':
+            return {
+                ...state,
+                upSellDisabled: true,
+            };
+
         default: throw new Error('unknown action: ' + action.type);
     }
 }

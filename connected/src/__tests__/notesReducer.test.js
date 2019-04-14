@@ -2,20 +2,20 @@ import { reducer } from '../notesReducer';
 
 describe('reducer', () => {
     const createInitialState = () => ({
-        hash: 10, 
-        lastId: 5,
-        notes: [
-            {
-                id: 1,
-                title: 'My Title',
-                body: 'Body text',
-            },
-            {
-                id: 2,
-                title: 'Second Title',
-                body: 'Another text',
-            },
-        ],
+        data: {
+            notes: [
+                {
+                    id: 1,
+                    title: 'My Title',
+                    body: 'Body text',
+                },
+                {
+                    id: 2,
+                    title: 'Second Title',
+                    body: 'Another text',
+                },
+            ],
+        },
     });
 
     it('addNote normal usage', () => {
@@ -24,14 +24,15 @@ describe('reducer', () => {
         const endState = reducer(startState, {
             type: 'addNote',
             content: {
+                id: 6,
                 title: 'Additional Note',
                 body: 'Some body',
             },
         });
 
         expect(startState).not.toBe(endState);
-        expect(endState.notes.length).toBe(3);
-        expect(endState.notes[2]).toEqual({
+        expect(endState.data.notes.length).toBe(3);
+        expect(endState.data.notes[2]).toEqual({
             id: 6,
             title: 'Additional Note',
             body: 'Some body',
@@ -51,8 +52,8 @@ describe('reducer', () => {
         });
 
         expect(startState).not.toBe(endState);
-        expect(endState.notes.length).toBe(2);
-        expect(endState.notes[0]).toEqual({
+        expect(endState.data.notes.length).toBe(2);
+        expect(endState.data.notes[0]).toEqual({
             id: 1,
             title: 'New First Title',
             body: 'New body',
@@ -72,9 +73,9 @@ describe('reducer', () => {
         });
 
         expect(startState).not.toBe(endState);
-        expect(endState.notes.length).toBe(2);
-        expect(endState.notes[0].title).toEqual('My Title');
-        expect(endState.notes[1].title).toEqual('Second Title');
+        expect(endState.data.notes.length).toBe(2);
+        expect(endState.data.notes[0].title).toEqual('My Title');
+        expect(endState.data.notes[1].title).toEqual('Second Title');
     });
 
     it('removeNote normal usage', () => {
@@ -86,8 +87,8 @@ describe('reducer', () => {
         });
 
         expect(startState).not.toBe(endState);
-        expect(endState.notes.length).toBe(1);
-        expect(endState.notes[0]).toEqual({
+        expect(endState.data.notes.length).toBe(1);
+        expect(endState.data.notes[0]).toEqual({
             id: 2,
             title: 'Second Title',
             body: 'Another text',
@@ -103,25 +104,42 @@ describe('reducer', () => {
         });
 
         expect(startState).not.toBe(endState);
-        expect(endState.notes.length).toBe(2);
+        expect(endState.data.notes.length).toBe(2);
     });
 
-    it('login normal usage', () => {
+    it('startLogin normal usage', () => {
         const startState = createInitialState();
         const endState = reducer(startState, {
-            type: 'login',
+            type: 'startLogin',
             loginEmail: 'test@test.com',
         });
 
         expect(startState).not.toBe(endState);
-        expect(endState.loginEmail).toEqual('test@test.com');
-        expect(endState.upSellDisabled).toEqual(true);
+        expect(endState.data.loginEmail).toEqual('test@test.com');
+        expect(endState.data.loginFlowStage).toEqual('started');
+        expect(endState.data.upSellDisabled).toEqual(true);
+    });
+
+    it('completeLogin normal usage', () => {
+        const startState = createInitialState();
+        const midState = reducer(startState, {
+            type: 'startLogin',
+            loginEmail: 'test@test.com',
+        });
+        const endState = reducer(midState, {
+            type: 'completeLogin',
+        });
+
+        expect(startState).not.toBe(endState);
+        expect(endState.data.loginEmail).toEqual('test@test.com');
+        expect(endState.data.loginFlowStage).toEqual('completed');
+        expect(endState.data.upSellDisabled).toEqual(true);
     });
 
     it('logout normal usage', () => {
         const startState = createInitialState();
         const midState = reducer(startState, {
-            type: 'login',
+            type: 'startLogin',
             loginEmail: 'test@test.com',
         });
         const endState = reducer(midState, {
@@ -129,8 +147,9 @@ describe('reducer', () => {
         });
 
         expect(startState).not.toBe(endState);
-        expect(endState.loginEmail).toBeUndefined();
-        expect(endState.upSellDisabled).toEqual(true);
+        expect(endState.data.loginEmail).toBeUndefined();
+        expect(endState.data.loginFlowStage).toBeUndefined();
+        expect(endState.data.upSellDisabled).toEqual(true);
     });
 
     it('disableUpSell normal usage', () => {
@@ -140,7 +159,7 @@ describe('reducer', () => {
         });
 
         expect(startState).not.toBe(endState);
-        expect(endState.upSellDisabled).toEqual(true);
+        expect(endState.data.upSellDisabled).toEqual(true);
     });
 
 });
