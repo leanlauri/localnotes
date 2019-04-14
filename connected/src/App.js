@@ -12,6 +12,7 @@ import LoginBarWithBanners from './LoginBarWithBanners';
 import NotesContainer from './NotesContainer';
 import connector from './firebaseConnector';
 import createRemoteDispatch from './remoteDispatch';
+import {basePath} from './urls';
 
 export const StateContext = createContext<any, any>([null, null]);
 
@@ -41,7 +42,7 @@ function App(): Node {
 
   return (
     <div className="App">
-      <Router>
+      <Router basename={basePath}>
         <Route
           path="/finishLogin/"
           render={({match, history}) => {

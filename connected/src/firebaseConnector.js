@@ -5,13 +5,13 @@ import type {Note} from './notesReducer';
 import type {State, ConnectState} from './notesReducer';
 
 import config from './firebaseConfig.json';
+import {baseUrl} from './urls';
 const firebase = require('firebase/app');
 require('firebase/auth');
 require('firebase/firestore');
 
 let db;
 let user;
-const baseUrl = process.env.NODE_ENV === 'production' ? 'https://leanlauri.github.io/localnotes' : 'http://localhost:3000';
 const actionCodeSettings = {
     url: `${baseUrl}/finishLogin/`,
     handleCodeInApp: true,
