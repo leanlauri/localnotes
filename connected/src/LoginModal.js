@@ -8,16 +8,17 @@ import React, { useState } from 'react';
 
 type Props = {|
   show: boolean,
+  initialEmail: ?string,
   onCancel: () => void,
   onConfirm: (string) => Promise<any>,
 |};
 
-function LoginModal({show, onCancel, onConfirm}: Props): Node {
-    const [email, setEmail] = useState('');
+function LoginModal({show, initialEmail, onCancel, onConfirm}: Props): Node {
+    const [email, setEmail] = useState(initialEmail);
 
     const onSubmit = (event) => {
       event.preventDefault();
-      onConfirm(email);
+      if (email) onConfirm(email);
     }
 
     return (

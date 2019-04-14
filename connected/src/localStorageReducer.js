@@ -11,7 +11,7 @@ import notesReducer from './notesReducer';
 const LOCAL_STORAGE_KEY = 'appState';
 
 function initState() {
-    console.log('loading');
+    console.log('loading data from local storage');
     const storedItem = localStorage.getItem(LOCAL_STORAGE_KEY) || '';
     let loadedDataState;
     try {
@@ -21,14 +21,13 @@ function initState() {
     }
     return {
         data: loadedDataState || {
-            hash: 0,
             notes: [],
         },
     };
 }
 
 function saveState(dataState: DataState) {
-    console.log('saving: ', dataState.hash);
+    console.log('saving data to local storate');
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataState));
 }
 

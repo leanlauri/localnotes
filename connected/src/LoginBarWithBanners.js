@@ -23,9 +23,6 @@ function LoginBarWithBanners(): Node {
             case '#logout':
                 // TODO: handle login errors
                 connector.logout(state, dispatch);
-                // dispatch({
-                //     type: 'logout'
-                // });
                 break;
             default: break;
         }
@@ -33,44 +30,22 @@ function LoginBarWithBanners(): Node {
 
     const onLogin = async (email) => {
         setLoginDialogVisible(false);
-        console.log('login with:', email);
+        console.log('Login requested with:', email);
         try {
             await connector.startLogin(email, state, dispatch);
-            // dispatch({
-            //     type: 'startLogin',
-            //     loginEmail: email,
-            // });        
         } catch (error) {
-            console.log('Error sending login email:', error, error && error.code);
+            console.error('Error sending login email:', error, error && error.code);
             dispatch({
                 type: 'logout',
             });
         }
-
-            // .then(function() {
-            //     // The link was successfully sent. Inform the user.
-            //     // Save the email locally so you don't need to ask the user for it again
-            //     // if they open the link on the same device.
-            //     dispatch({
-            //         type: 'startLogin',
-            //         loginEmail: email,
-            //     });        
-            // })
-            // .catch(function(error) {
-            //     // Some error occurred, you can inspect the code: error.code
-            //     console.log('Error sending login email:', error, error && error.code);
-            //     dispatch({
-            //         type: 'logout',
-            //     });
-        
-            // });
-        
     };
 
     return (
         <>
             <LoginModal
                 show={loginDialogVisible}
+                initialEmail={state.email}
                 onCancel={() => setLoginDialogVisible(false)}
                 onConfirm={onLogin}
             />

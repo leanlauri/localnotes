@@ -1,6 +1,4 @@
 /**
- * TODO: limit access to owner only
- * 
  * @flow
  */
 import type {Note} from './notesReducer';
@@ -11,19 +9,12 @@ const firebase = require('firebase/app');
 require('firebase/auth');
 require('firebase/firestore');
 
-// let status: Status = 'none';
 let db;
 let user;
 const actionCodeSettings = {
-    // URL you want to redirect back to. The domain (www.example.com) for this
-    // URL must be whitelisted in the Firebase Console.
     url: 'http://localhost:3000/finishLogin/',
     handleCodeInApp: true,
 };
-
-// function getStatus(): Status {
-//     return status;
-// }
 
 function setConnectState(connectState: ConnectState, dispatch: Function) {
     dispatch({
@@ -32,42 +23,17 @@ function setConnectState(connectState: ConnectState, dispatch: Function) {
     });
 }
 
-async function init(state: State, dispatch: Function): Promise<any> {
-    if (state.connectState === 'inProgress' || state.connectState === 'loggedIn') return;
-    if (firebase.apps.length) return;
-    // if (state.connectState === 'initialised') return addUserStateListener(state, dispatch);
-    setConnectState('inProgress', dispatch);
-    // if (firebase) {
-    console.log('Initialising Firebase');
-    firebase.initializeApp(config);
-    // user = firebase.auth.currentUser;
-    // console.log('user', user);
-    // if (!user) {
-    //     status = 'initFailed';
-    //     return;
-    // }
-    initDb();
-    setConnectState('initialised', dispatch);
-    // status = 'initialised';
-    return await addUserStateListener(state, dispatch);
-}
-
-async function addUserStateListener(state: State, dispatch: Function): Promise<any> {
-    return new Promise((resolve, reject) => {
-        firebase.auth().onAuthStateChanged((userObject) => {
-            console.log('authStateChanged, user:', userObject);
-            if (userObject) {
-                user = userObject;
-                dispatch({type: 'completeLogin'});
-                resolve(user);
-                // setConnectState('loggedIn', dispatch);
-            } else {
-                user = null;
-                setConnectState('loginFailed', dispatch);
-                resolve(null);
-            }
-        })
-    });
+function init(state: State, dispatch: Function) {
+    try {
+        if (!firebase.apps.length) {
+            console.log('Initialising Firebase');
+            firebase.initializeApp(config);
+            initDb();
+        }
+    } catch (err) {
+        console.error('Firestore: Error initialising:', err && err.code);
+        setConnectState('loginFailed', dispatch);
+    }
 }
 
 function initDb() {
@@ -78,86 +44,62 @@ function initDb() {
         });
 }
 
-// // TODO: refactor this. Roughly: init() -> sync init library and db -> async event fired saying logged in -> sync docs from that
-// function connect(): boolean {
-//     if (status === 'none') init();
-//     if (status === 'initFailed') {
-//         console.error('Connect failed.');
-//         return false;
-//     }
-
-//     return true;
-// }
-
-async function startLogin(email: string, state: State, dispatch: Function): Promise<void> {
-    await init(state, dispatch);
-    console.log('starting login');
-     // TODO: handle init errors somehow?
-    // if (state.connectState !== 'initialised') return;
-    // if (!connect()) return new Promise((resolve, reject) => reject(new Error('Cannot connect')));
-
-    await firebase.auth().sendSignInLinkToEmail(email, actionCodeSettings);
-    // setConnectState('loginStarted', dispatch);
-    dispatch({
-        type: 'startLogin',
-        loginEmail: email,
-    });
-    // .then(function() {
-    //     // The link was successfully sent. Inform the user.
-    //     // Save the email locally so you don't need to ask the user for it again
-    //     // if they open the link on the same device.
-    //     window.localStorage.setItem('emailForSignIn', email);
-    // })
-    // .catch(function(error) {
-    //     // Some error occurred, you can inspect the code: error.code
-    // });
+async function waitForUserAuth(state: State, dispatch: Function): Promise<?firebase.User> {
+    if (user) return user;
+    try {
+        return await addUserStateListener(state, dispatch);
+    } catch (err) {
+        console.error('Firestore: Error initialising:', err && err.code);
+        setConnectState('loginFailed', dispatch);
+        return null;
+    }
 }
 
-// const address = window.location.href;
-async function finishLogin(address: string, email: string, state: State, dispatch: Function): Promise<void> {
-    // Confirm the link is a sign-in with email link.
-    if (firebase.auth().isSignInWithEmailLink(address)) {
-        // Additional state parameters can also be passed via URL.
-        // This can be used to continue the user's intended action before triggering
-        // the sign-in operation.
-        // Get the email if available. This should be available if the user completes
-        // the flow on the same device where they started it.
-        // var email = window.localStorage.getItem('emailForSignIn');
-        // if (!email) {
-        // // User opened the link on a different device. To prevent session fixation
-        // // attacks, ask the user to provide the associated email again. For example:
-        // email = window.prompt('Please provide your email for confirmation');
-        // }
-        // The client SDK will parse the code from the link for you.
-        try {
-            await firebase.auth().signInWithEmailLink(email, window.location.href);
-            dispatch({type: 'completeLogin'});
-            // setConnectState('loggedIn', dispatch);
-        } catch(error) {
-            dispatch({type: 'loginFailed'});
-            // setConnectState('loginFailed', dispatch);
-            throw error;
-        }
-        // .then(function(result) {
-        //     // Clear email from storage.
-        //     window.localStorage.removeItem('emailForSignIn');
-        //     // You can access the new user via result.user
-        //     // Additional user info profile not available via:
-        //     // result.additionalUserInfo.profile == null
-        //     // You can check if the user is new or existing:
-        //     // result.additionalUserInfo.isNewUser
-        // })
-        // .catch(function(error) {
-        //     // Some error occurred, you can inspect the code: error.code
-        //     // Common errors could be invalid email and invalid or expired OTPs.
-        // });
-    } else {
+async function addUserStateListener(state: State, dispatch: Function): Promise<?firebase.User> {
+    return new Promise((resolve, reject) => {
+        firebase.auth().onAuthStateChanged((userObject) => {
+            console.log('authStateChanged, user:', userObject);
+            if (userObject) {
+                user = userObject;
+                dispatch({type: 'completeLogin'});
+                resolve(user);
+            } else {
+                user = null;
+                setConnectState('loginFailed', dispatch);
+                resolve(null);
+            }
+        });
+    });
+}
+
+async function startLogin(email: string, state: State, dispatch: Function): Promise<void> {
+    try {
+        console.log('starting login');
+        init(state, dispatch);
+        await firebase.auth().sendSignInLinkToEmail(email, actionCodeSettings);
+        dispatch({
+            type: 'startLogin',
+            loginEmail: email,
+        });
+    } catch (err) {
+        console.error('Firestore: Login failed:', err && err.code);
         setConnectState('loginFailed', dispatch);
-        throw new Error('Address is not a valid login link');
-        // return new Promise((resolve, reject) => {
-        //     reject(new Error('Address is not a valid login link'));
-        // });
     }
+}
+
+async function finishLogin(address: string, email: string, state: State, dispatch: Function): Promise<void> {
+    try {
+        if (!firebase.auth().isSignInWithEmailLink(address)) {
+            console.error('Address is not a valid login address:', address);
+            dispatch({type: 'loginFailed'});
+            return;
+        }
+        await firebase.auth().signInWithEmailLink(email, address);
+        dispatch({type: 'completeLogin'});
+    } catch (error) {
+        console.error('Error completing login:', error, error && error.code);
+        dispatch({type: 'loginFailed'});
+      }  
 }
 
 async function logout(state: State, dispatch: Function): Promise<any> {
@@ -168,39 +110,35 @@ async function logout(state: State, dispatch: Function): Promise<any> {
 }
 
 async function sync(state: State, dispatch: Function): Promise<any> {
-    if (!db) {
-        console.error('DB not initialised');
-        throw new Error('DB not initialised');
-        // return new Promise((resolve, reject) => reject(new Error('DB not initialised')));
+    if (!db || !user) {
+        console.error('DB or user not initialised');
+        throw new Error('DB or user not initialised');
     }
-    if (!user) throw new Error('Not logged in');
-    // return new Promise((resolve, reject) => reject(new Error('Not logged in')));
     
     await retrieveNotes(state.data.notes, dispatch);
     return sendNotes(state.data.notes, dispatch);            
 }
 
 function listenToChanges(state: State, dispatch: Function) {
-    if (!db) {
-        console.error('DB not initialised');
+    if (!db || !user) {
+        console.error('DB or user not initialised. Cancelling listen to changes.');
         return;
     }
-    // if (!user) return new Promise((resolve, reject) => reject(new Error('Not logged in')));
     
-    db.collection('notes')
+    db.collection('notes').where("owner", "==", user.uid)
         .onSnapshot({includeMetadataChanges: true}, (snapshot) => {
-            console.log('snapshot', snapshot);
+            // console.log('snapshot', snapshot);
             if (!snapshot.metadata.fromCache && !snapshot.metadata.hasPendingWrites) {
                 snapshot.docChanges().forEach(function(change) {
-                    console.log('change.type', change.type);
+                    // console.log('change.type', change.type);
                     if (change.type === 'added') {
-                        console.log('New remote note received: ', change.doc.id, change.doc.data());
+                        // console.log('New remote note received: ', change.doc.id, change.doc.data());
                         storeNoteLocally(change.doc.id, change.doc.data(), dispatch);
                     } else if (change.type === 'modified') {
-                        console.log('Updated note received: ', change.doc.data());
+                        // console.log('Updated note received: ', change.doc.data());
                         updateNoteLocally(change.doc.id, change.doc.data(), dispatch);
                     } else if (change.type === 'removed') {
-                        console.log('Delete notification received: ', change.doc.id);
+                        // console.log('Delete notification received: ', change.doc.id);
                         removeNoteLocally(change.doc.id, dispatch);
                     } 
                 });
@@ -230,12 +168,11 @@ async function sendNotes(notes: Array<Note>, dispatch: Function): Promise<any> {
     await Promise.all(
         notes.map((note) => {
             if (note.id.startsWith('local:')) {
-                console.log('sending note:', note.id);
+                // console.log('sending note:', note.id);
                 return storeNoteRemotely(note, dispatch);
             } else return new Promise((resolve, reject) => resolve());
         })
     );
-    console.log('ALL resolved');
 }
 
 function updateNoteLocally(id, data, dispatch) {
@@ -271,9 +208,8 @@ function removeNoteLocally(id, dispatch) {
 }
 
 async function storeNoteRemotely(note: Note, dispatch: Function): Promise<void> {
-    console.log('storeNoteRemotely');
+    console.log('storing note to server');
     if (!user) throw new Error('Not logged in');
-    // return new Promise((resolve, reject) => reject(new Error('Not logged in')));
 
     try {
         const docRef = await db.collection('notes').add({
@@ -299,9 +235,8 @@ async function storeNoteRemotely(note: Note, dispatch: Function): Promise<void> 
 }
 
 async function updateNoteRemotely(note: Note, dispatch: Function): Promise<void> {
-    // if (state.connectState !== 'initialised') return;// new Promise((resolve, reject) => resolve());
+    console.log('updating note on server');
     if (!user) throw new Error('Not logged in');
-    // return new Promise((resolve, reject) => reject(new Error('Not logged in')));
 
     try {
         await db.collection('notes').doc(note.id).set({
@@ -316,7 +251,7 @@ async function updateNoteRemotely(note: Note, dispatch: Function): Promise<void>
 }
 
 async function removeNoteRemotely(id: string, dispatch: Function): Promise<void> {
-    // if (state.connectState !== 'initialised') return;// new Promise((resolve, reject) => resolve());
+    console.log('removing note from server');
     if (!user) throw new Error('Not logged in');
 
     try {
@@ -329,6 +264,7 @@ async function removeNoteRemotely(id: string, dispatch: Function): Promise<void>
 
 export default {
     init,
+    waitForUserAuth,
     startLogin,
     finishLogin,
     logout,

@@ -9,19 +9,10 @@ export type Note = {|
     body: ?string,
 |};
 
-export type ConnectState = 'inProgress' | 'initialised' | 'initFailed' | 'loginStarted' | 'loggedIn' | 'loginFailed';
-// export type Status = 
-//     'none' | 
-//     'inProgress' | 
-//     'initialised' | 
-//     'loginStarted' |
-//     'loggedIn' | 
-//     'loginFailed' |
-//     'initFailed';
+export type ConnectState = 'loginStarted' | 'loggedIn' | 'loginFailed';
+
 export type DataState = {|
-    hash: number,
     notes: Array<Note>,
-    // lastId: number,
     loginEmail?: string,
     loginFlowStage?: 'started' | 'completed',
     upSellDisabled?: boolean,
@@ -96,7 +87,6 @@ export function reducer(state: State, action: any): State {
                 ...state,
                 data: {
                     ...state.data,
-                    loginEmail: undefined,
                 },
                 connectState: 'loginFailed',
             };
@@ -135,22 +125,18 @@ function dataReducer(state: DataState, action: any): DataState {
         case 'addNote':
             return {
                 ...state,
-                hash: state.hash + 1,
                 notes: addNote(state.notes, action.content),
-                // lastId: Math.max(state.lastId, action.content.id),
             };
         case 'modifyNote':
             if (action.id == null) return state;
             return {
                 ...state,
-                hash: state.hash + 1,
                 notes: replaceNote(state.notes, action.id, action.content),
             };
         case 'removeNote':
             if (action.id == null) return state;
             return {
                 ...state,
-                hash: state.hash + 1,
                 notes: removeNote(state.notes, action.id),
             };
         default: throw new Error('unknown action: ' + action.type);

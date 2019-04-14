@@ -32,7 +32,7 @@ function LoginStatusBanner({status, onLogin}: Props): Node {
                 >
                     <Alert.Heading>Waiting to Login</Alert.Heading>
                     <p>
-                        Find and click on your login link in your email client.
+                        Open the login link in an email we just sent you.
                     </p>
                 </Alert>
             );
@@ -45,20 +45,6 @@ function LoginStatusBanner({status, onLogin}: Props): Node {
                     onClose={() => setShowingWarning(false)}
                 >
                     <Alert.Heading>Logged in</Alert.Heading>
-                </Alert>
-            );
-        case 'initFailed':
-            return (
-                <Alert
-                    dismissible
-                    variant="danger"
-                    show={showingError}
-                    onClose={() => setShowingError(false)}
-                >
-                    <Alert.Heading>Connection failed</Alert.Heading>
-                    <p>
-                        Check your connection and try again.
-                    </p>
                 </Alert>
             );
         case 'loginFailed':

@@ -12,7 +12,6 @@ import LoginBarWithBanners from './LoginBarWithBanners';
 import NotesContainer from './NotesContainer';
 import connector from './firebaseConnector';
 import createRemoteDispatch from './remoteDispatch';
-import { Spinner } from 'react-bootstrap';
 
 export const StateContext = createContext<any, any>([null, null]);
 
@@ -27,18 +26,14 @@ function App(): Node {
     if (state.data.loginFlowStage === 'completed') {
       (async () => {
         try {
-          const user = await connector.init(state, dispatch);
+          connector.init(state, dispatch);
+          const user = await connector.waitForUserAuth(state, dispatch);
           if (user) {
             await connector.sync(state, dispatch);
             connector.listenToChanges(state, dispatch);
           }
-          // if (!connector.connect()) return;
-          // connector.sync(state, dispatch)
-          //   .then(() => {
-          //     connector.listenToChanges(state, dispatch);
-          //   });
         } catch (error) {
-          console.log('Error synchronising data:', error);
+          console.error('Error synchronising data:', error);
         }
       })();
    }
@@ -51,15 +46,13 @@ function App(): Node {
           path="/finishLogin/"
           render={({match, history}) => {
             handleLogin(state, dispatch, match, history);
-            return <Spinner />
-            // <HandleLogin state={state} dispatch={dispatch} match={match} history={history}/>
+            return null;
           }}/>
           
         <Route  
           path="/:section?"
           render={({ match, history }) => {
-            console.log('match', match);
-            console.log('section', match.params.section);
+            console.log('Section', match.params.section); // not currently used
             return (
               <StateContext.Provider value={[state, dispatch]}>
                 <div className="topbar-container">
@@ -77,27 +70,17 @@ function App(): Node {
 }
 
 async function handleLogin(state, dispatch, match, history) {
-  try {
-    await connector.init(state, dispatch);
-    if (state.data.loginEmail == null) {
-      console.log('No login email in state');
-      history.push('/');
-      dispatch({
-        type: 'loginFailed',
-      });
-      return;
-    }
-    await connector.finishLogin(window.location.href, state.data.loginEmail, state, dispatch);
-    history.push('/');
-    // dispatch({
-    //   type: 'completeLogin',
-    // });
-
-  } catch (error) {
-    console.log('Error completing login:', error, error && error.code);
-    // dispatch({
-    //   type: 'loginFailed',
-    // });
+  console.log('Handling finishLogin request');
+  connector.init(state, dispatch);
+  const address = window.location.href;
+  history.push('/');
+  if (state.data.loginEmail == null) {
+    console.error('No login email in stored state');
+    dispatch({
+      type: 'loginFailed',
+    });
+  } else {
+    await connector.finishLogin(address, state.data.loginEmail, state, dispatch);
   }
 }
 

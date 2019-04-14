@@ -35,7 +35,7 @@ function NotesContainer(): Node {
                     <AddCard onClick={() => dispatch({
                         type: 'addNote',
                         content: {
-                            id: 'local:' + new Date().getTime(), //(state.lastId + 1),
+                            id: 'local:' + new Date().getTime(),
                             title: 'New Note',
                             body: '',
                         }

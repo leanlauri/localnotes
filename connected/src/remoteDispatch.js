@@ -15,8 +15,7 @@ function createRemoteDispatch(state: State, dispatch: Function): Function {
 }
 
 function handleAction(action, state, dispatch) {
-    console.log('state.connectState is', state.connectState);
-    if (state.connectState !== 'loggedIn') return;// new Promise((resolve, reject) => resolve());
+    if (state.connectState !== 'loggedIn') return;
 
     switch (action.type) {
         case 'addNote':
