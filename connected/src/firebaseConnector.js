@@ -11,8 +11,9 @@ require('firebase/firestore');
 
 let db;
 let user;
+const baseUrl = process.env.NODE_ENV === 'production' ? 'https://leanlauri.github.io/localnotes' : 'http://localhost:3000';
 const actionCodeSettings = {
-    url: 'http://localhost:3000/finishLogin/',
+    url: `${baseUrl}/finishLogin/`,
     handleCodeInApp: true,
 };
 
